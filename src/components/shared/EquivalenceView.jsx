@@ -6,7 +6,8 @@ import Loading from '@/components/Loading';
 import UniversityModal from '../UniversityModal';
 import PDFGenerator from '@/components/PDFGenerator';
 
-const { FaRegFilePdf } = Icon;
+const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark } = Icon;
+
 
 // Función para agrupar materias por semestre
 const agruparPorSemestre = (data) => {
@@ -57,6 +58,8 @@ const EquivalenceView = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [studentData, setStudentData] = useState(null);
+    const [resumen, setResumen] = useState({})
+
 
     const [showUniversityModal, setShowUniversityModal] = useState(false);
 
@@ -106,24 +109,32 @@ const EquivalenceView = ({
                     `${process.env.NEXT_PUBLIC_GET_EQUIVALENCE}/${studentData.id}/1/2`
                 );
 
-                // Transformar datos del backend al formato esperado
                 const equivalenciasTransformadas = {};
 
-                response.data.forEach(item => {
-                    equivalenciasTransformadas[item.cursoNuevoId] = {
-                        estado: item.estado === 'HOMOLOGADO' ? 'COMPLETO' : item.estado,
-                        observacion: item.observacion,
-                        cursoNuevo: {
-                            id: item.cursoNuevo.id,
-                            nombre: item.cursoNuevo.nombre,
-                            creditos: item.cursoNuevo.creditos,
-                            semestre: item.cursoNuevo.semestre
-                        },
-                        grupoId: item.grupoId,
-                        cursosAntiguosPresentes: item.cursosAntiguosPresentes,
-                        cursosAntiguosFaltantes: item.cursosAntiguosFaltantes
-                    };
-                });
+                const { resumen } = response.data
+
+                setResumen(resumen)
+
+                if (Array.isArray(response.data.resultados)) {
+                    response.data.resultados.forEach(item => {
+                        equivalenciasTransformadas[item.cursoNuevoId] = {
+                            estado: item.estado === 'HOMOLOGADO' ? 'COMPLETO' : item.estado,
+                            observacion: item.observacion,
+                            cursoNuevo: {
+                                id: item.cursoNuevo.id,
+                                nombre: item.cursoNuevo.nombre,
+                                creditos: item.cursoNuevo.creditos,
+                                semestre: item.cursoNuevo.semestre
+                            },
+                            grupoId: item.grupoId,
+                            cursosAntiguosPresentes: item.cursosAntiguosPresentes,
+                            cursosAntiguosFaltantes: item.cursosAntiguosFaltantes
+                        };
+                    });
+                } else {
+                    console.error("La respuesta no contiene un array de resultados:", response.data.resultados);
+                    setError('Datos inesperados en la respuesta del servidor');
+                }
 
                 setMallaNueva(equivalenciasTransformadas);
             } catch (error) {
@@ -137,16 +148,9 @@ const EquivalenceView = ({
         fetchEquivalencias();
     }, [studentData]);
 
-    const handleExportPDF = () => {
-        // Lógica por defecto para exportar PDF
-        console.log('Exportando PDF para:', { mallaNueva, studentData });
-        alert('Funcionalidad de exportar PDF en desarrollo');
-    };
-
     const materiasPorSemestre = agruparPorSemestre(mallaNueva);
     const totalMaterias = Object.keys(mallaNueva).length;
 
-    // Loading state
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -198,6 +202,7 @@ const EquivalenceView = ({
                         <PDFGenerator
                             data={mallaNueva}
                             studentData={studentData}
+                            resumen={resumen}
                             buttonText="Exportar PDF"
                             disabled={Object.keys(mallaNueva).length === 0}
                         />
@@ -227,60 +232,141 @@ const EquivalenceView = ({
                 </div>
             </div>
 
-            {/* Área de semestres con scroll horizontal y vertical cuando sea necesario */}
-            <div className="flex-1 bg-[#f7f7f7] p-4 overflow-hidden">
-                <div className="h-full overflow-x-auto">
-                    <div className="inline-flex gap-4 pr-4 scroll-smooth snap-x snap-mandatory min-h-full">
-                        {materiasPorSemestre.map((sem) => (
-                            <div key={sem.semestre} className="w-80 bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex-shrink-0">
-                                {/* Header del semestre */}
-                                <div className="mb-4 border-b border-[#8F141B]/20 pb-3">
-                                    <h3 className="font-bold text-lg text-slate-900 mb-1 text-center">
-                                        {sem.label}
-                                    </h3>
-                                    <p className="text-sm text-slate-500 text-center">
-                                        Total:{" "}
-                                        <span className="font-semibold text-[#8F141B]">
-                                            {sem.totalCreditos} créditos
-                                        </span>
-                                    </p>
-                                </div>
+            {/* Área de semestres + resumen dentro de un scroll vertical */}
+            <div className="flex-1 bg-[#f7f7f7] overflow-y-auto">
+                <div className="p-4 space-y-8">
+                    <div className="overflow-x-auto">
+                        <div className="inline-flex gap-4 pr-4 scroll-smooth snap-x snap-mandatory">
+                            {materiasPorSemestre.map((sem) => (
+                                <div key={sem.semestre} className="w-80 bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex-shrink-0">
+                                    {/* Header del semestre */}
+                                    <div className="mb-4 border-b border-[#8F141B]/20 pb-3">
+                                        <h3 className="font-bold text-lg text-slate-900 mb-1 text-center">
+                                            {sem.label}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 text-center">
+                                            Total:{" "}
+                                            <span className="font-semibold text-[#8F141B]">
+                                                {sem.totalCreditos} créditos
+                                            </span>
+                                        </p>
+                                    </div>
 
-                                {/* Materias del semestre SIN scroll vertical */}
-                                <div className="space-y-3">
-                                    {sem.materias.map((materia) => (
-                                        <div
-                                            key={materia.id}
-                                            className={`p-3 border-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer flex flex-col ${getColorClass(
-                                                materia.estado
-                                            )}`}
-                                        >
-                                            <h4 className="font-bold text-sm mb-2 text-slate-900 leading-tight">
-                                                {materia.nombre}
-                                            </h4>
+                                    {/* Materias del semestre SIN scroll vertical */}
+                                    <div className="space-y-3">
+                                        {sem.materias.map((materia) => (
+                                            <div
+                                                key={materia.id}
+                                                className={`p-3 border-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer flex flex-col ${getColorClass(
+                                                    materia.estado
+                                                )}`}
+                                            >
+                                                <h4 className="font-bold text-sm mb-2 text-slate-900 leading-tight">
+                                                    {materia.nombre}
+                                                </h4>
 
-                                            <div className="flex-1 mb-2">
-                                                <h5 className="text-xs font-semibold text-slate-700 mb-1">Observaciones:</h5>
-                                                <p className="text-xs text-slate-600 leading-relaxed">
-                                                    {materia.observacion}
-                                                </p>
-                                            </div>
+                                                <div className="flex-1 mb-2">
+                                                    <h5 className="text-xs font-semibold text-slate-700 mb-1">Observaciones:</h5>
+                                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                                        {materia.observacion}
+                                                    </p>
+                                                </div>
 
-                                            <div className="mt-auto pt-2 border-t border-slate-200">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs font-medium text-slate-900">
-                                                        Créditos: {materia.num_creditos}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500">
-                                                        {materia.estado === 'COMPLETO' ? 'HOMOLOGADO' : materia.estado === 'INCOMPLETO' ? 'INCOMPLETO' : 'NO APLICA'}
-                                                    </span>
+                                                <div className="mt-auto pt-2 border-t border-slate-200">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs font-medium text-slate-900">
+                                                            Créditos: {materia.num_creditos}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500">
+                                                            {materia.estado === 'COMPLETO'
+                                                                ? 'HOMOLOGADO'
+                                                                : materia.estado === 'INCOMPLETO'
+                                                                ? 'INCOMPLETO'
+                                                                : 'NO APLICA'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col container mx-auto px-4 pb-8">
+                        <div className="flex flex-col gap-2 mb-5">
+                            <h1 className='text-2xl text-[#8F141B] font-bold'>Resumen de Equivalencia</h1>
+                            <span className='text-sm text-[#839198]'>Análisis detallado del proceso de homologación a la nueva malla curricular</span>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-5">
+                            <div className="border-2 border-green-400 bg-green-50 px-4 py-3 rounded-lg h-40">
+                                <div className="flex justify-between items-center px-1 pt-2">
+                                    <CiCircleCheck className='text-green-600 rounded-lg bg-green-200 px-2 py-1 ' size={40} />
+                                    <h1 className='text-2xl text-green-700 font-bold'>{resumen?.homologados ?? resumen?.homologado ?? 0}</h1>
+                                </div>
+                                <div className="flex flex-col gap-2 mt-5">
+                                    <h1 className='font-semibold text-xl'>Materias homologadas</h1>
+                                    <p className='text-[#839198]'>Materias aprobadas exitosamente</p>
                                 </div>
                             </div>
-                        ))}
+                            <div className="border-2 border-yellow-400 bg-yellow-50 px-4 py-3 rounded-lg h-40">
+                                <div className="flex justify-between items-center px-1 pt-2">
+                                    <CiWarning className='text-yellow-600 rounded-lg bg-yellow-200 px-2 py-1 ' size={40} />
+                                    <h1 className='text-2xl text-yellow-700 font-bold'>{resumen?.incompletos ?? 0}</h1>
+                                </div>
+                                <div className="flex flex-col gap-2 mt-5">
+                                    <h1 className='font-semibold text-xl'>Materias Incompletas</h1>
+                                    <p className='text-[#839198]'>Requieren atencion adicional</p>
+                                </div>
+                            </div>
+                            <div className="border-2 border-red-400 bg-red-50 px-4 py-3 rounded-lg h-40">
+                                <div className="flex justify-between items-center px-1 pt-2">
+                                    <HiOutlineXMark className='text-red-600 rounded-lg bg-red-200 px-2 py-1 ' size={40} />
+                                    <h1 className='text-2xl text-red-700 font-bold'>{resumen?.noAplica ?? resumen?.no_aplica ?? 0}</h1>
+                                </div>
+                                <div className="flex flex-col gap-2 mt-5">
+                                    <h1 className='font-semibold text-xl'>No Aplican</h1>
+                                    <p className='text-[#839198]'>Materias no aprobadas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-5 mt-5">
+                            <div className="border-2 border-[#c27276] bg-[#F4E7E8] px-4 py-3 rounded-lg h-40">
+                                <div className="flex self-start gap-3">
+                                    <IoBookOutline className='text-[#8F141B] rounded-lg bg-[#e9dadb] px-2 py-1 ' size={40} />
+                                    <div className="flex flex-col gap-1">
+                                        <p className='text-sm font-semibold'>Malla Antigua</p>
+                                        <h1 className='text-2xl text-[#8F141B] font-bold'>{resumen?.creditosCompletadosMallaAntigua ?? resumen?.creditos_completados_malla_antigua ?? 0}<span className='pl-1 text-[#404244] text-sm font-medium'>Creditos completados</span></h1>
+                                    </div>
+                                </div>
+                                <div className="h-2 mt-10 bg-[#8F141B] rounded-full"></div>
+                            </div>
+                            <div className="border-2 border-[#DFD4A6] bg-[#F9F6ED] px-4 py-3 rounded-lg h-40">
+                                <div className="flex self-start gap-3">
+                                    <TfiMedall className='text-[#C7B363] rounded-lg bg-[#EFEAD3] px-2 py-1 ' size={40} />
+                                    <div className="flex flex-col gap-1">
+                                        <p className='text-sm font-semibold'>Malla Nueva</p>
+                                        <h1 className='text-2xl text-[#C7B363] font-bold'>{resumen?.creditosHomologadosMallaNueva ?? resumen?.creditos_homologados_malla_nueva ?? 0}<span className='pl-1 text-[#404244] text-sm font-medium'>de {resumen?.totalCreditosMallaNueva ?? resumen?.total_creditos_malla_nueva ?? 0} creditos</span></h1>
+                                    </div>
+                                </div>
+                                {/* Progress bar: muestra el porcentaje de créditos homologados sobre el total de la malla nueva */}
+                                {(() => {
+                                    const homologados = Number(resumen?.creditosHomologadosMallaNueva ?? resumen?.creditos_homologados_malla_nueva ?? 0);
+                                    const total = Number(resumen?.totalCreditosMallaNueva ?? resumen?.total_creditos_malla_nueva ?? 0) || 0;
+                                    const raw = total > 0 ? (homologados / total) * 100 : 0;
+                                    const pct = Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 0;
+                                    return (
+                                        <div className="w-full mt-4">
+                                            <div className="w-full bg-[#e9f0e6] rounded-full h-3 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Progreso malla nueva ${pct}%`}>
+                                                <div className="h-3 bg-[#C7B363] rounded-full" style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <div className="text-xs text-slate-700 mt-2">{pct}% completado</div>
+                                        </div>
+                                    )
+                                })()}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

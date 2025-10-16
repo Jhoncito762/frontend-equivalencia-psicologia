@@ -6,7 +6,7 @@ import Loading from '@/components/Loading';
 import UniversityModal from '@/components/UniversityModal';
 import PDFGenerator from '@/components/PDFGenerator';
 
-const { CiCircleCheck, IoBookOutline, TfiMedall } = Icon;
+const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark } = Icon;
 
 // Datos mock removidos - ahora se obtienen del backend
 
@@ -56,7 +56,8 @@ const page = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [studentData, setStudentData] = useState(null);
-    const [showUniversityModal, setShowUniversityModal] = useState(false);
+    const [showUniversityModal, setShowUniversityModal] = useState(false)
+    const [resumen, setResumen] = useState({})
 
     const [modalConfig, setModalConfig] = useState({
         type: 'success',
@@ -99,21 +100,29 @@ const page = () => {
                 // Transformar datos del backend al formato esperado
                 const equivalenciasTransformadas = {};
 
-                response.data.forEach(item => {
-                    equivalenciasTransformadas[item.cursoNuevoId] = {
-                        estado: item.estado === 'HOMOLOGADO' ? 'COMPLETO' : item.estado,
-                        observacion: item.observacion,
-                        cursoNuevo: {
-                            id: item.cursoNuevo.id,
-                            nombre: item.cursoNuevo.nombre,
-                            creditos: item.cursoNuevo.creditos,
-                            semestre: item.cursoNuevo.semestre
-                        },
-                        grupoId: item.grupoId,
-                        cursosAntiguosPresentes: item.cursosAntiguosPresentes,
-                        cursosAntiguosFaltantes: item.cursosAntiguosFaltantes
-                    };
-                });
+                const {resumen} = response.data
+                setResumen(resumen || {});
+
+                if (Array.isArray(response.data.resultados)) {
+                    response.data.resultados.forEach(item => {
+                        equivalenciasTransformadas[item.cursoNuevoId] = {
+                            estado: item.estado === 'HOMOLOGADO' ? 'COMPLETO' : item.estado,
+                            observacion: item.observacion,
+                            cursoNuevo: {
+                                id: item.cursoNuevo.id,
+                                nombre: item.cursoNuevo.nombre,
+                                creditos: item.cursoNuevo.creditos,
+                                semestre: item.cursoNuevo.semestre
+                            },
+                            grupoId: item.grupoId,
+                            cursosAntiguosPresentes: item.cursosAntiguosPresentes,
+                            cursosAntiguosFaltantes: item.cursosAntiguosFaltantes
+                        };
+                    });
+                } else {
+                    console.error("La respuesta no contiene un array de resultados:", response.data.resultados);
+                    setError('Datos inesperados en la respuesta del servidor');
+                }
 
                 setMallaNueva(equivalenciasTransformadas);
             } catch (error) {
@@ -179,6 +188,7 @@ const page = () => {
                     <PDFGenerator
                         data={mallaNueva}
                         studentData={studentData}
+                        resumen={resumen}
                         buttonText="Exportar PDF"
                         disabled={Object.keys(mallaNueva).length === 0}
                     />
@@ -273,7 +283,7 @@ const page = () => {
                     <div className="border-2 border-green-400 bg-green-50 px-4 py-3 rounded-lg h-40">
                         <div className="flex justify-between items-center px-1 pt-2">
                             <CiCircleCheck className='text-green-600 rounded-lg bg-green-200 px-2 py-1 ' size={40} />
-                            <h1 className='text-2xl text-green-700 font-bold'>24</h1>
+                            <h1 className='text-2xl text-green-700 font-bold'>{resumen?.homologados ?? resumen?.homologado ?? 0}</h1>
                         </div>
                         <div className="flex flex-col gap-2 mt-5">
                             <h1 className='font-semibold text-xl'>Materias homologadas</h1>
@@ -282,8 +292,8 @@ const page = () => {
                     </div>
                     <div className="border-2 border-yellow-400 bg-yellow-50 px-4 py-3 rounded-lg h-40">
                         <div className="flex justify-between items-center px-1 pt-2">
-                            <CiCircleCheck className='text-yellow-600 rounded-lg bg-yellow-200 px-2 py-1 ' size={40} />
-                            <h1 className='text-2xl text-yellow-700 font-bold'>24</h1>
+                            <CiWarning className='text-yellow-600 rounded-lg bg-yellow-200 px-2 py-1 ' size={40} />
+                            <h1 className='text-2xl text-yellow-700 font-bold'>{resumen?.incompletos ?? 0}</h1>
                         </div>
                         <div className="flex flex-col gap-2 mt-5">
                             <h1 className='font-semibold text-xl'>Materias Incompletas</h1>
@@ -292,8 +302,8 @@ const page = () => {
                     </div>
                     <div className="border-2 border-red-400 bg-red-50 px-4 py-3 rounded-lg h-40">
                         <div className="flex justify-between items-center px-1 pt-2">
-                            <CiCircleCheck className='text-red-600 rounded-lg bg-red-200 px-2 py-1 ' size={40} />
-                            <h1 className='text-2xl text-red-700 font-bold'>24</h1>
+                            <HiOutlineXMark className='text-red-600 rounded-lg bg-red-200 px-2 py-1 ' size={40} />
+                            <h1 className='text-2xl text-red-700 font-bold'>{resumen?.noAplica ?? resumen?.no_aplica ?? 0}</h1>
                         </div>
                         <div className="flex flex-col gap-2 mt-5">
                             <h1 className='font-semibold text-xl'>No Aplican</h1>
@@ -307,7 +317,7 @@ const page = () => {
                             <IoBookOutline className='text-[#8F141B] rounded-lg bg-[#e9dadb] px-2 py-1 ' size={40} />
                             <div className="flex flex-col gap-1">
                                 <p className='text-sm font-semibold'>Malla Antigua</p>
-                                <h1 className='text-2xl text-[#8F141B] font-bold'>127<span className='pl-1 text-[#404244] text-sm font-medium'>Creditos completados</span></h1>
+                                <h1 className='text-2xl text-[#8F141B] font-bold'>{resumen?.creditosCompletadosMallaAntigua ?? resumen?.creditos_completados_malla_antigua ?? 0}<span className='pl-1 text-[#404244] text-sm font-medium'>Creditos completados</span></h1>
                             </div>
                         </div>
                         <div className="h-2 mt-10 bg-[#8F141B] rounded-full"></div>
@@ -316,11 +326,25 @@ const page = () => {
                         <div className="flex self-start gap-3">
                             <TfiMedall className='text-[#C7B363] rounded-lg bg-[#EFEAD3] px-2 py-1 ' size={40} />
                             <div className="flex flex-col gap-1">
-                                <p className='text-sm font-semibold'>Malla Antigua</p>
-                                <h1 className='text-2xl text-[#C7B363] font-bold'>127<span className='pl-1 text-[#404244] text-sm font-medium'>de 160 creditos</span></h1>
+                                <p className='text-sm font-semibold'>Malla Nueva</p>
+                                <h1 className='text-2xl text-[#C7B363] font-bold'>{resumen?.creditosHomologadosMallaNueva ?? resumen?.creditos_homologados_malla_nueva ?? 0}<span className='pl-1 text-[#404244] text-sm font-medium'>de {resumen?.totalCreditosMallaNueva ?? resumen?.total_creditos_malla_nueva ?? 0} creditos</span></h1>
                             </div>
                         </div>
-                        <div className="h-2 mt-10 bg-[#C7B363] rounded-full"></div>
+                        {/* Progress bar: muestra el porcentaje de créditos homologados sobre el total de la malla nueva */}
+                        {(() => {
+                            const homologados = Number(resumen?.creditosHomologadosMallaNueva ?? resumen?.creditos_homologados_malla_nueva ?? 0);
+                            const total = Number(resumen?.totalCreditosMallaNueva ?? resumen?.total_creditos_malla_nueva ?? 0) || 0;
+                            const raw = total > 0 ? (homologados / total) * 100 : 0;
+                            const pct = Number.isFinite(raw) ? Math.max(0, Math.min(100, Math.round(raw))) : 0;
+                            return (
+                                <div className="w-full mt-4">
+                                    <div className="w-full bg-[#e9f0e6] rounded-full h-3 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`Progreso malla nueva ${pct}%`}>
+                                        <div className="h-3 bg-[#C7B363] rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <div className="text-xs text-slate-700 mt-2">{pct}% completado</div>
+                                </div>
+                            )
+                        })()}
                     </div>
                 </div>
             </div>

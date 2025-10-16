@@ -11,7 +11,7 @@ export const metadata = {
     title: "Equivalencia - Psicologia",
     description: "Equivalencia de la nueva malla",
     icons: {
-        icon: "./usco-logo.ico",
+        icon: "/usco-logo.ico",
     },
 };
 

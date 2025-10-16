@@ -1,7 +1,7 @@
 
 import { PiStudentFill } from "react-icons/pi";
 import { FaChalkboardTeacher, FaArrowLeft, FaEye, FaEyeSlash, FaRegFilePdf, FaArrowRight } from "react-icons/fa";
-import { CiLogin, CiLogout, CiCircleCheck, CiCircleRemove, CiCircleAlert  } from "react-icons/ci";
+import { CiLogin, CiLogout, CiCircleCheck, CiCircleRemove, CiCircleAlert, CiWarning  } from "react-icons/ci";
 import { LuUserRound, LuGraduationCap, LuUser } from "react-icons/lu";
 import { MdNumbers, MdDashboard } from "react-icons/md";
 import { IoBookOutline, IoDocumentTextOutline } from "react-icons/io5";
@@ -9,7 +9,7 @@ import { HiChevronDown, HiChevronRight, HiMenuAlt3, HiChevronLeft } from "react-
 import { AiOutlineExclamationCircle } from "react-icons/ai";
 import { FiSearch, FiPlus  } from "react-icons/fi";
 import { TfiMedall } from "react-icons/tfi";
-
+import { HiOutlineXMark } from "react-icons/hi2";
 
 
 const Icon = {
@@ -39,7 +39,9 @@ const Icon = {
   CiCircleRemove,
   CiCircleAlert,
   FaArrowRight,
-  TfiMedall
+  TfiMedall,
+  CiWarning,
+  HiOutlineXMark
 };
 
 export default Icon;

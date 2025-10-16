@@ -33,9 +33,6 @@ export default function UniversityModal({
 
     const isSuccess = type === "success";
     const iconColor = isSuccess ? "text-green-600" : "text-red-600";
-    const borderColor = isSuccess
-        ? "border-t-4 border-t-green-600"
-        : "border-t-4 border-t-red-600";
     const primaryButtonColor = isSuccess ? "#CE932C" : "#8f141b";
 
     return (
@@ -48,7 +45,7 @@ export default function UniversityModal({
 
             {/* Modal */}
             <div
-                className={`relative w-full max-w-lg animate-in fade-in zoom-in duration-200 ${borderColor}`}
+                className={`relative w-full max-w-lg animate-in fade-in zoom-in duration-200`}
             >
                 <div className="bg-white rounded-lg shadow-2xl relative">
                     {/* Botón cerrar */}
@@ -78,9 +75,10 @@ export default function UniversityModal({
                         {/* Icono */}
                         <div className="mb-4 flex justify-center">
                             {isSuccess ? (
-                                <div className="rounded-full bg-white flex items-center justify-center" style={{ width: 96, height: 96, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '6px solid #16a34a' }}>
-                                    <AiOutlineCheckCircle className={`h-10 w-10 ${iconColor}`} />
+                                <div className=" flex items-center justify-center">
+                                    <AiOutlineCheckCircle className={`${iconColor}`} size={80}/>
                                 </div>
+
                             ) : (
                                 <HiOutlineExclamationCircle
                                     className={`h-16 w-16 ${iconColor}`}
