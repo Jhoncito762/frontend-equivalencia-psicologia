@@ -94,7 +94,7 @@ const page = () => {
         }
 
         try {
-            const verificationResponse = await axiosPublic.get(`/equivalencias/verificar/${studentId}`);
+            const verificationResponse = await axiosPublic.get(`${process.env.NEXT_PUBLIC_VERIFY_EQUIVALENCE}/${studentId}`);
             const { tieneEquivalencias } = verificationResponse.data || {};
 
             if (tieneEquivalencias) {
