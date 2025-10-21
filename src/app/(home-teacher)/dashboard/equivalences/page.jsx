@@ -8,6 +8,7 @@ import TablaEstudiantes from "../components/TablaEstudiantes";
 import Paginator from "../components/Paginator";
 import FormModal from "../components/FormModal";
 import axiosPrivate from "@/apis/axiosPrivate";
+import InputItem from "@/components/InputItem";
 
 const Page = () => {
     const router = useRouter();
@@ -16,34 +17,34 @@ const Page = () => {
     const [estudiantes, setEstudiantes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
+    const [showFormModal, setShowFormModal] = useState(false);
+
     // Estados para paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
 
-    // Función para construir la URL con parámetros
     const construirURL = () => {
         const endpoint = process.env.NEXT_PUBLIC_USER_DATA;
         const params = new URLSearchParams();
-        
+
         // Parámetros fijos
         params.append('limit', itemsPerPage.toString());
         params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
         params.append('estado', 'true');
         params.append('estudiante', 'true');
-        
+
         // Parámetros dinámicos - código estudiantil
         if (searchTerm.trim() !== '') {
             params.append('codigo_estudiantil', searchTerm.trim());
         }
-        
+
         // Parámetros dinámicos - tiene equivalencias
         if (filterEstado === 'con-equivalencia') {
             params.append('tiene_equivalencias', 'true');
         }
         // Si filterEstado es 'todos', no se agrega el parámetro tiene_equivalencias
-        
+
         return `${endpoint}?${params.toString()}`;
     };
 
@@ -52,25 +53,15 @@ const Page = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const url = construirURL();
-            console.log('Fetching from URL:', url); // Para debugging
-            
+
             const response = await axiosPrivate.get(url);
-            
+
             // Actualizar información de paginación
             setTotalItems(response.data.total || 0);
             setItemsPerPage(response.data.limit || 10);
-            
-            // Debug info
-            console.log('Pagination data:', {
-                total: response.data.total,
-                limit: response.data.limit,
-                offset: response.data.offset,
-                totalPages: response.data.totalPages,
-                dataLength: response.data.data.length
-            });
-            
+
             // Mapear los datos del backend a la estructura que espera la tabla
             const estudiantesData = response.data.data.map(estudiante => ({
                 id: estudiante.id,
@@ -83,12 +74,11 @@ const Page = () => {
                 created_at: estudiante.created_at,
                 updated_at: estudiante.updated_at
             }));
-            
+
             setEstudiantes(estudiantesData);
         } catch (err) {
             console.error('Error al obtener estudiantes:', err);
             setError(err.response?.data?.message || err.message || 'Error al cargar los datos');
-            // En caso de error, mantener datos vacíos
             setEstudiantes([]);
             setTotalItems(0);
         } finally {
@@ -101,53 +91,50 @@ const Page = () => {
         obtenerEstudiantes();
     }, []);
 
-    // Efecto para recargar datos cuando cambian los filtros
     useEffect(() => {
-        // Debounce para evitar muchas peticiones mientras se escribe
         const timeoutId = setTimeout(() => {
-            // Resetear a la primera página cuando cambian los filtros
             if (currentPage !== 1) {
                 setCurrentPage(1);
             } else {
                 obtenerEstudiantes();
             }
         }, 500); // Espera 500ms después de que el usuario deje de escribir
-        
+
         return () => clearTimeout(timeoutId);
     }, [searchTerm, filterEstado]);
 
-    // Efecto para cargar datos cuando cambia la página
     useEffect(() => {
         obtenerEstudiantes();
     }, [currentPage]);
 
-    // Función para manejar cambio de página
+    const handleSearchTermChange = (e) => {
+        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 15);
+        setSearchTerm(digitsOnly);
+    };
+
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
     };
 
     const handleVerResultados = (id) => {
-        // Guardar el ID del estudiante en sessionStorage
         sessionStorage.setItem('estudianteId', id.toString());
-        
-        // Redirigir a la vista de equivalencias en el dashboard
+
         router.push('/dashboard/student-equivalence');
-        
+
         console.log(`ID del estudiante guardado en sessionStorage: ${id}`);
     };
 
     const handleHacerEquivalencia = (id) => {
         // Guardar el ID del estudiante en sessionStorage
         sessionStorage.setItem('estudianteId', id.toString());
-        
+
         // Redirigir a la vista de selección de materias en el dashboard
         router.push('/dashboard/student-home');
-        
+
         console.log(`ID del estudiante guardado en sessionStorage: ${id}`);
     };
 
     // state para controlar modal de registro
-    const [showFormModal, setShowFormModal] = useState(false);
 
     return (
         <div className="min-h-screen flex flex-col px-4 gap-5 pb-8">
@@ -170,13 +157,13 @@ const Page = () => {
                             Buscar por código estudiantil
                         </label>
                         <div className="relative">
-                            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                            <input
+                            <InputItem
                                 type="text"
                                 placeholder="Ej: 202122003243"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 rounded-md border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50"
+                                onChange={handleSearchTermChange}
+                                maxLength={15}
+                                inputMode="numeric"
                             />
                         </div>
                     </div>
@@ -265,7 +252,7 @@ const Page = () => {
                     </div>
                 </div>
             )}
-            
+
             {/* Modal para registrar nuevo estudiante desde el dashboard */}
             <FormModal
                 isOpen={showFormModal}

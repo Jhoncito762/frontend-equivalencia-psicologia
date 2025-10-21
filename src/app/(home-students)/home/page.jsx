@@ -112,7 +112,7 @@ const page = () => {
 
             setModalConfig({
                 type: 'success',
-                title: 'Euivalencia exitosa',
+                title: 'Equivalencia exitosa',
                 message: 'La equivalencia se ha realizado exitosamente. Seras redirigido a la nueva malla curricular.',
                 onAccept: () => router.push('/home/equivalence')
             });
@@ -264,7 +264,6 @@ const page = () => {
                                     key={numeroSemestre}
                                     className="rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
                                 >
-                                    {/* Trigger/Header */}
                                     <div className="flex w-full items-center justify-between p-5 hover:bg-slate-100/50 transition-colors rounded-t-lg">
                                         <button
                                             type="button"

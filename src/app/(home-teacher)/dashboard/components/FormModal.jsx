@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import InputItem from "@/components/InputItem";
 import axiosPublic from "@/apis/axiosPublic";
 import UniversityModal from "@/components/UniversityModal";
+import DataTreatmentModal from "@/components/DataTreatmentModal";
 
 const { IoDocumentTextOutline } = Icon;
 
@@ -15,6 +16,7 @@ export default function FormModal({ isOpen, onClose }) {
     const [estudianteId, setEstudianteId] = useState(null);
     const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [showExistingModal, setShowExistingModal] = useState(false);
+    const [showDataTreatmentModal, setShowDataTreatmentModal] = useState(false);
     const [modalConfig, setModalConfig] = useState({
         type: "success",
         title: "",
@@ -22,28 +24,65 @@ export default function FormModal({ isOpen, onClose }) {
         onAccept: null,
     });
 
-    const [formData, setFormData] = useState({
+    const [fieldErrors, setFieldErrors] = useState({
         nombres: "",
         apellidos: "",
         codigo_estudiantil: "",
     });
 
+    const [formData, setFormData] = useState({
+        nombres: "",
+        apellidos: "",
+        codigo_estudiantil: "",
+        acepta_tratamiento_datos: false,
+        version_politicas: "1.0.0",
+    });
+
     // Reset form and internal state each time the modal is opened
     useEffect(() => {
         if (isOpen) {
-            setFormData({ nombres: "", apellidos: "", codigo_estudiantil: "" });
+            setFormData({
+                nombres: "",
+                apellidos: "",
+                codigo_estudiantil: "",
+                acepta_tratamiento_datos: false,
+                version_politicas: "1.0.0",
+            });
             setError(null);
             setLoading(false);
             setEstudianteId(null);
             setShowUniversityModal(false);
             setShowExistingModal(false);
+            setShowDataTreatmentModal(false);
             setModalConfig({ type: "success", title: "", message: "", onAccept: null });
+            setFieldErrors({ nombres: "", apellidos: "", codigo_estudiantil: "" });
         }
     }, [isOpen]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        let nextValue = value;
+
+        if (name === "codigo_estudiantil") {
+            nextValue = value.replace(/\D/g, "").slice(0, 15);
+        }
+
+        if (fieldErrors[name]) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                [name]: "",
+            }));
+        }
+
+        setFormData((prev) => ({ ...prev, [name]: nextValue }));
+    };
+
+    const handleCheckboxChange = (e) => {
+        const { checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            acepta_tratamiento_datos: checked,
+        }));
     };
 
     const handleUniversityModalClose = () => {
@@ -51,96 +90,137 @@ export default function FormModal({ isOpen, onClose }) {
         if (modalConfig.onAccept) modalConfig.onAccept();
     };
 
-    const handleSubmit = async () => {
-        setError(null);
-        setLoading(true);
+    const resolveStudentId = (payload) => payload?.estudiante_id ?? payload?.id ?? null;
+
+    const handleVerificationFlow = async (payload, trimmedValues) => {
+        const studentId = resolveStudentId(payload);
+
+        if (!studentId) {
+            setModalConfig({
+                type: "error",
+                title: "Identificación Estudiante",
+                message: "No fue posible determinar el identificador del estudiante. Intenta nuevamente.",
+                onAccept: null,
+            });
+            setShowUniversityModal(true);
+            return;
+        }
+
         try {
-            const response = await axiosPublic.post(process.env.NEXT_PUBLIC_BACKEND_STUDENT, formData);
+            const verificationResponse = await axiosPublic.get(`/equivalencias/verificar/${studentId}`);
+            const { tieneEquivalencias } = verificationResponse.data || {};
 
-            if (response.status === 201 && response.data?.estudiante_id) {
-                const existingId = response.data.estudiante_id;
-                setEstudianteId(existingId);
-                sessionStorage.setItem('studentData', JSON.stringify({ id: existingId }));
-                sessionStorage.setItem("estudianteId", String(existingId));
+            sessionStorage.setItem(
+                "studentData",
+                JSON.stringify({
+                    id: studentId,
+                    nombres: payload?.nombres ?? trimmedValues.nombres,
+                    apellidos: payload?.apellidos ?? trimmedValues.apellidos,
+                    codigo_estudiantil: payload?.codigo_estudiantil ?? trimmedValues.codigo_estudiantil,
+                })
+            );
+            sessionStorage.setItem("estudianteId", String(studentId));
+
+            if (tieneEquivalencias) {
+                setEstudianteId(studentId);
                 setShowExistingModal(true);
-                return;
-            }
-
-            if (response.data?.id) {
-                sessionStorage.setItem(
-                    "studentData",
-                    JSON.stringify({
-                        id: response.data.id,
-                        nombres: response.data.nombres,
-                        apellidos: response.data.apellidos,
-                        codigo_estudiantil: response.data.codigo_estudiantil,
-                    })
-                );
-
-                sessionStorage.setItem("estudianteId", String(response.data.id));
-
-                setModalConfig({
-                    type: "success",
-                    title: "Registro exitoso",
-                    message: "Estudiante registrado correctamente. Serás redirigido para continuar.",
-                    onAccept: () => {
-                        onClose?.();
-                        router.push('/dashboard/student-home');
-                    },
-                });
-                setShowUniversityModal(true);
                 return;
             }
 
             setModalConfig({
+                type: "success",
+                title: "Ingreso exitoso",
+                message: "Estudiante registrado correctamente. Serás redirigido para continuar.",
+                onAccept: () => {
+                    onClose?.();
+                    router.push("/dashboard/student-home");
+                },
+            });
+            setShowUniversityModal(true);
+        } catch (verificationError) {
+            console.error("Error al verificar equivalencias:", verificationError);
+            setModalConfig({
                 type: "error",
-                title: "Error de Registro",
-                message: "No se pudo procesar la solicitud. Intenta nuevamente.",
+                title: "Error de Verificación",
+                message: "No se pudo verificar la información del estudiante. Intenta nuevamente.",
                 onAccept: null,
             });
             setShowUniversityModal(true);
-        } catch (error) {
-            console.error("Error al procesar solicitud:", error);
-
-            if (error.response?.data?.message && error.response?.data?.estudiante_id) {
-                const existingId = error.response.data.estudiante_id;
-                setEstudianteId(existingId);
-                sessionStorage.setItem('studentData', JSON.stringify({ id: existingId }));
-                sessionStorage.setItem('estudianteId', String(existingId));
-                setShowExistingModal(true);
-            } else {
-                let errorMessage = "Error al procesar la solicitud. Intenta nuevamente.";
-
-                if (error.response?.status === 400) {
-                    errorMessage = "Datos inválidos. Verifique la información ingresada.";
-                } else if (error.response?.status === 409) {
-                    errorMessage = "El código estudiantil ya está registrado.";
-                } else if (error.response?.status === 500) {
-                    errorMessage = "Error del servidor. Intente nuevamente más tarde.";
-                } else if (!error.response) {
-                    errorMessage = "Error de conexión. Verifique su conexión a internet.";
-                }
-
-                setModalConfig({
-                    type: "error",
-                    title: "Error de Registro",
-                    message: errorMessage,
-                    onAccept: null,
-                });
-                setShowUniversityModal(true);
-            }
-        } finally {
-            setLoading(false);
         }
     };
 
-    const handleViewResults = () => {
-        sessionStorage.setItem("estudianteId", String(estudianteId));
-        router.push('/dashboard/student-equivalence');
-    };
+    const handleSubmit = async () => {
+        setError(null);
+        const trimmedData = {
+            nombres: formData.nombres.trim(),
+            apellidos: formData.apellidos.trim(),
+            codigo_estudiantil: formData.codigo_estudiantil.trim(),
+        };
 
-    const handleCloseInternalModal = () => {
-        setShowUniversityModal(false);
+        const newErrors = {
+            nombres: trimmedData.nombres ? "" : "Campo obligatorio",
+            apellidos: trimmedData.apellidos ? "" : "Campo obligatorio",
+            codigo_estudiantil: trimmedData.codigo_estudiantil ? "" : "Campo obligatorio",
+        };
+
+        if (!trimmedData.nombres || !trimmedData.apellidos || !trimmedData.codigo_estudiantil) {
+            setFieldErrors(newErrors);
+            return;
+        }
+
+        if (!formData.acepta_tratamiento_datos) {
+            setModalConfig({
+                type: "error",
+                title: "Tratamiento de datos",
+                message: "Debes aceptar el tratamiento de datos para poder realizar la equivalencia.",
+                onAccept: null,
+            });
+            setShowUniversityModal(true);
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const submissionData = {
+                ...formData,
+                nombres: trimmedData.nombres,
+                apellidos: trimmedData.apellidos,
+                codigo_estudiantil: trimmedData.codigo_estudiantil,
+            };
+
+            const response = await axiosPublic.post(process.env.NEXT_PUBLIC_BACKEND_STUDENT, submissionData);
+
+            await handleVerificationFlow(response.data, trimmedData);
+        } catch (error) {
+            console.error("Error al procesar solicitud:", error);
+
+            if (error.response?.status === 409) {
+                await handleVerificationFlow(error.response?.data ?? {}, trimmedData);
+                return;
+            }
+
+            let errorMessage = "Error al procesar la solicitud. Intenta nuevamente.";
+
+            if (error.response?.status === 400) {
+                errorMessage = "Datos inválidos. Verifique la información ingresada.";
+            } else if (error.response?.status === 500) {
+                errorMessage = "Error del servidor. Intente nuevamente más tarde.";
+            } else if (!error.response) {
+                errorMessage = "Error de conexión. Verifique su conexión a internet.";
+            }
+
+            setError(errorMessage);
+            setModalConfig({
+                type: "error",
+                title: "Error de Registro",
+                message: errorMessage,
+                onAccept: null,
+            });
+            setShowUniversityModal(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleViewResultsFromExisting = () => {
@@ -155,7 +235,7 @@ export default function FormModal({ isOpen, onClose }) {
 
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-lg mx-auto transform transition-all duration-300 scale-100">
+            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-lg mx-auto transform transition-all duration-300 scale-100 relative overflow-hidden">
                 <div className="bg-[#CE932C] rounded-t-2xl p-6 text-center">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                         <IoDocumentTextOutline className="w-8 h-8 text-white" />
@@ -179,6 +259,7 @@ export default function FormModal({ isOpen, onClose }) {
                             name="nombres"
                             value={formData.nombres}
                             onChange={handleInputChange}
+                            error={fieldErrors.nombres}
                         />
                         <InputItem
                             labelName="Apellido"
@@ -187,6 +268,7 @@ export default function FormModal({ isOpen, onClose }) {
                             name="apellidos"
                             value={formData.apellidos}
                             onChange={handleInputChange}
+                            error={fieldErrors.apellidos}
                         />
                         <InputItem
                             labelName="Código estudiantil"
@@ -195,7 +277,31 @@ export default function FormModal({ isOpen, onClose }) {
                             name="codigo_estudiantil"
                             value={formData.codigo_estudiantil}
                             onChange={handleInputChange}
+                            error={fieldErrors.codigo_estudiantil}
                         />
+                    </div>
+
+                    <div className="flex items-start gap-3 mb-4">
+                        <input
+                            id="acepta_tratamiento_datos"
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 accent-[#8F141B]"
+                            checked={formData.acepta_tratamiento_datos}
+                            onChange={handleCheckboxChange}
+                        />
+                        <label
+                            htmlFor="acepta_tratamiento_datos"
+                            className="text-sm text-[#4D626C] leading-5"
+                        >
+                            Acepto el tratamiento de datos personales conforme a la{' '}
+                            <button
+                                type="button"
+                                onClick={() => setShowDataTreatmentModal(true)}
+                                className="text-[#8F141B] underline font-medium"
+                            >
+                                política de tratamiento de datos
+                            </button>.
+                        </label>
                     </div>
 
                     {error && (
@@ -233,9 +339,13 @@ export default function FormModal({ isOpen, onClose }) {
                     title={modalConfig.title}
                     message={modalConfig.message}
                 />
+                <DataTreatmentModal
+                    isOpen={showDataTreatmentModal}
+                    onClose={() => setShowDataTreatmentModal(false)}
+                />
                 {showExistingModal && (
-                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-md mx-auto transform transition-all duration-300 scale-100">
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-40 p-4 rounded-2xl">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 scale-100">
                             <div className="bg-[#CE932C] rounded-t-2xl p-6 text-center">
                                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                                     <IoDocumentTextOutline className="w-8 h-8 text-white" />

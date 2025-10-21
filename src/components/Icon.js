@@ -10,6 +10,7 @@ import { AiOutlineExclamationCircle } from "react-icons/ai";
 import { FiSearch, FiPlus  } from "react-icons/fi";
 import { TfiMedall } from "react-icons/tfi";
 import { HiOutlineXMark } from "react-icons/hi2";
+import { FaRepeat } from "react-icons/fa6";
 
 
 const Icon = {
@@ -41,7 +42,8 @@ const Icon = {
   FaArrowRight,
   TfiMedall,
   CiWarning,
-  HiOutlineXMark
+  HiOutlineXMark,
+  FaRepeat
 };
 
 export default Icon;

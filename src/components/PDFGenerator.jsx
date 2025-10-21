@@ -252,7 +252,7 @@ const PDFGenerator = ({
         <button 
             onClick={generatePDF}
             disabled={disabled || isGeneratingPDF}
-            className={`bg-[#8F141B] rounded-lg flex items-center gap-2 text-white py-2 px-3 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[#8F141B]/90 ${className}`}
+            className={`bg-[#8F141B] rounded-lg w-40 flex items-center justify-center gap-2 text-white py-2 px-3 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[#8F141B]/90 ${className}`}
         >
             <FaRegFilePdf />
             {isGeneratingPDF ? 'Generando PDF...' : buttonText}

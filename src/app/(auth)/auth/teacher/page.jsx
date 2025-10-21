@@ -20,6 +20,10 @@ const page = () => {
     const [error, setError] = useState(null);
     const [showPassword, setShowPassword] = useState(false)
     const [showModal, setShowModal] = useState(false)
+    const [fieldErrors, setFieldErrors] = useState({
+        credential: '',
+        password: ''
+    });
     const [modalConfig, setModalConfig] = useState({
         type: 'success',
         title: '',
@@ -50,6 +54,12 @@ const page = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if (fieldErrors[name]) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -67,6 +77,19 @@ const page = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        const trimmedCredential = formData.credential.trim();
+        const trimmedPassword = formData.password.trim();
+
+        const newErrors = {
+            credential: trimmedCredential ? '' : 'Campo obligatorio',
+            password: trimmedPassword ? '' : 'Campo obligatorio'
+        };
+
+        if (!trimmedCredential || !trimmedPassword) {
+            setFieldErrors(newErrors);
+            return;
+        }
+
         setLoading(true)
         try {
             const response = await axiosPublic.post(
@@ -139,6 +162,7 @@ const page = () => {
                         name="credential"
                         value={formData.credential}
                         onChange={handleInputChange}
+                        error={fieldErrors.credential}
                     />
                     <div className="relative w-full flex items-center">
                         <InputItem
@@ -148,6 +172,7 @@ const page = () => {
                             name="password"
                             value={formData.password}
                             onChange={handleInputChange}
+                            error={fieldErrors.password}
                         />
                         <button
                             type="button"

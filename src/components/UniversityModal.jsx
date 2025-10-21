@@ -32,14 +32,14 @@ export default function UniversityModal({
     if (!isOpen) return null;
 
     const isSuccess = type === "success";
-    const iconColor = isSuccess ? "text-green-600" : "text-red-600";
+    const iconColor = isSuccess ? "text-green-800" : "text-red-800";
     const primaryButtonColor = isSuccess ? "#CE932C" : "#8f141b";
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Fondo oscuro */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50"
                 onClick={onClose}
             />
 

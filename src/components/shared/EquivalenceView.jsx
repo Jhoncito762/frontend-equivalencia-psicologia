@@ -5,8 +5,9 @@ import axiosPublic from '@/apis/axiosPublic'
 import Loading from '@/components/Loading';
 import UniversityModal from '../UniversityModal';
 import PDFGenerator from '@/components/PDFGenerator';
+import { useRouter } from 'next/navigation';
 
-const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark } = Icon;
+const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark, FaRepeat } = Icon;
 
 
 // Función para agrupar materias por semestre
@@ -69,6 +70,7 @@ const EquivalenceView = ({
         message: ''
     });
 
+    const router = useRouter();
 
     const handleUniversityModalClose = () => {
         setShowUniversityModal(false);
@@ -189,29 +191,42 @@ const EquivalenceView = ({
         );
     }
 
+    const repeatEquivalence = () => {
+        router.push('/dashboard/student-home')
+    }
+
+
     return (
         <div className='w-full h-full flex flex-col overflow-hidden'>
             {/* Header fijo */}
-            <div className="border-b border-gray-300 py-3 flex justify-between items-center bg-white px-4 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                    <h1 className='text-xl font-bold text-[#8F141B]'>{title}</h1>
-                    <span className='text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-2 text-xs'>{totalMaterias} materias</span>
-                </div>
-                {showExportButton && (
-                    <div className="flex items-center gap-2">
-                        <PDFGenerator
-                            data={mallaNueva}
-                            studentData={studentData}
-                            resumen={resumen}
-                            buttonText="Exportar PDF"
-                            disabled={Object.keys(mallaNueva).length === 0}
-                        />
+            <div className="border-b border-gray-300 py-3 bg-white px-4 flex-shrink-0">
+                <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                        <h1 className='text-xl font-bold text-[#8F141B] text-center sm:text-left'>{title}</h1>
+                        <span className='mt-2 sm:mt-0 text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-3 text-xs self-center sm:self-auto'>{totalMaterias} materias</span>
                     </div>
-                )}
+                    {showExportButton && (
+                        <div className="flex gap-2 items-center sm:items-center sm:justify-end">
+                            <button
+                                onClick={repeatEquivalence}
+                                className='w-40 md:w-50 flex items-center justify-center gap-2 border border-[#8F141B] text-[#8F141B] px-3 py-2 rounded-lg hover:bg-gray-100 transition duration-200'
+                            >
+                                <FaRepeat /> Repetir
+                            </button>
+                            <PDFGenerator
+                                data={mallaNueva}
+                                studentData={studentData}
+                                resumen={resumen}
+                                buttonText="Exportar PDF"
+                                disabled={Object.keys(mallaNueva).length === 0}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Título y leyenda fijos */}
-            <div className="py-3 flex flex-col items-center justify-center text-center gap-2 bg-[#f7f7f7] flex-shrink-0">
+            <div className="py-3 flex flex-col items-center justify-center text-center gap-2 flex-shrink-0">
                 <h1 className='text-lg font-bold'>PSICOLOGIA - USCO</h1>
                 <span className='text-xs text-[#839198]'>ACUERDO CA 010 DE 2025</span>
 
@@ -233,7 +248,7 @@ const EquivalenceView = ({
             </div>
 
             {/* Área de semestres + resumen dentro de un scroll vertical */}
-            <div className="flex-1 bg-[#f7f7f7] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-8">
                     <div className="overflow-x-auto">
                         <div className="inline-flex gap-4 pr-4 scroll-smooth snap-x snap-mandatory">
@@ -281,8 +296,8 @@ const EquivalenceView = ({
                                                             {materia.estado === 'COMPLETO'
                                                                 ? 'HOMOLOGADO'
                                                                 : materia.estado === 'INCOMPLETO'
-                                                                ? 'INCOMPLETO'
-                                                                : 'NO APLICA'}
+                                                                    ? 'INCOMPLETO'
+                                                                    : 'NO APLICA'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -317,7 +332,7 @@ const EquivalenceView = ({
                                 </div>
                                 <div className="flex flex-col gap-2 mt-5">
                                     <h1 className='font-semibold text-xl'>Materias Incompletas</h1>
-                                    <p className='text-[#839198]'>Requieren atencion adicional</p>
+                                    <p className='text-[#839198]'>Incompletas por otra materia</p>
                                 </div>
                             </div>
                             <div className="border-2 border-red-400 bg-red-50 px-4 py-3 rounded-lg h-40">

@@ -5,14 +5,16 @@ import axiosPublic from '@/apis/axiosPublic'
 import Loading from '@/components/Loading';
 import UniversityModal from '@/components/UniversityModal';
 import PDFGenerator from '@/components/PDFGenerator';
+import { useRouter } from 'next/navigation';
 
-const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark } = Icon;
+const { CiCircleCheck, IoBookOutline, TfiMedall, CiWarning, HiOutlineXMark, FaRepeat } = Icon;
 
 // Datos mock removidos - ahora se obtienen del backend
 
 // Función para agrupar materias por semestre
 const agruparPorSemestre = (data) => {
     const semestres = {};
+
 
     Object.values(data).forEach(materia => {
         const semestre = materia.cursoNuevo.semestre;
@@ -64,6 +66,8 @@ const page = () => {
         title: '',
         message: ''
     });
+
+    const router = useRouter()
 
 
     const handleUniversityModalClose = () => {
@@ -174,17 +178,19 @@ const page = () => {
         );
     }
 
-
-
+    const repeatEquivalence = () => { 
+        router.push('/home')
+    }
 
     return (
         <div className='min-h-screen w-full bg-[#f7f7f7] pb-8 flex flex-col'>
             <div className="border-b border-gray-300 py-7 flex justify-between items-center bg-white px-8">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row md:items-center gap-2">
                     <h1 className='text-2xl font-bold text-[#8F141B] '>Malla Curricular</h1>
-                    <span className='text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-2 text-sm'>{totalMaterias} materias</span>
+                    <span className='text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-2 text-sm w-25 text-center'>{totalMaterias} materias</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row gap-2 items-center md:gap-4">
+                    <button onClick={repeatEquivalence} className='flex items-center gap-2 border border-[#8F141B] text-[#8F141B] px-3 py-2 rounded-lg hover:bg-gray-100 transform transition duration-400 w-40 md:w-50 justify-center'><FaRepeat /> Repetir equivalencia</button>
                     <PDFGenerator
                         data={mallaNueva}
                         studentData={studentData}
@@ -214,7 +220,7 @@ const page = () => {
                     </div>
                 </div>
             </div>
-            <div className="container mx-auto px-4 pb-8">
+            <div className="container mx-auto px-10 pb-8">
                 <div className="overflow-x-auto pb-4">
                     <div className="flex gap-6 min-w-max">
                         {materiasPorSemestre.map((sem) => (
@@ -274,7 +280,7 @@ const page = () => {
                     </div>
                 </div>
             </div>
-            <div className="flex flex-col container mx-auto px-4 my-8 ">
+            <div className="flex flex-col container mx-auto px-10 my-8 ">
                 <div className="flex flex-col gap-2 mb-5">
                     <h1 className='text-2xl text-[#8F141B] font-bold'>Resumen de Equivalencia</h1>
                     <span className='text-sm text-[#839198]'>Análisis detallado del proceso de homologación a la nueva malla curricular</span>
@@ -297,7 +303,7 @@ const page = () => {
                         </div>
                         <div className="flex flex-col gap-2 mt-5">
                             <h1 className='font-semibold text-xl'>Materias Incompletas</h1>
-                            <p className='text-[#839198]'>Requieren atencion adicional</p>
+                            <p className='text-[#839198]'>Incompletas por otra materia</p>
                         </div>
                     </div>
                     <div className="border-2 border-red-400 bg-red-50 px-4 py-3 rounded-lg h-40">
