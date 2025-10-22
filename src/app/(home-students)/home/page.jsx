@@ -113,7 +113,7 @@ const page = () => {
             setModalConfig({
                 type: 'success',
                 title: 'Equivalencia exitosa',
-                message: 'La equivalencia se ha realizado exitosamente. Seras redirigido a la nueva malla curricular.',
+                message: 'La equivalencia se ha realizado exitosamente. Serás redirigido a la nueva malla curricular.',
                 onAccept: () => router.push('/home/equivalence')
             });
             setShowUniversityModal(true);

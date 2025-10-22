@@ -166,8 +166,8 @@ const page = () => {
                     />
                     <div className="relative w-full flex items-center">
                         <InputItem
-                            labelName="Contrasenia"
-                            placeholder="Ingresa tu contrasenia"
+                            labelName="Contraseña"
+                            placeholder="Ingresa tu contraseña"
                             type={showPassword ? "text" : "password"}
                             name="password"
                             value={formData.password}

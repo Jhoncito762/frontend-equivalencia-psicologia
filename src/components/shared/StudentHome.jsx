@@ -120,8 +120,8 @@ const StudentHome = ({
 
             setModalConfig({
                 type: 'success',
-                title: 'Euivalencia exitosa',
-                message: 'La equivalencia se ha realizado exitosamente. Seras redirigido a la nueva malla curricular.',
+                title: 'Equivalencia exitosa',
+                message: 'La equivalencia se ha realizado exitosamente. Serás redirigido a la nueva malla curricular.',
                 onAccept: () => router.push(redirectTo)
             });
             setShowUniversityModal(true);
