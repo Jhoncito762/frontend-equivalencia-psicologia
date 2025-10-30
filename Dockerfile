@@ -1,8 +1,5 @@
-# Usa una imagen base oficial de Node.js
-FROM node:22-alpine
-
-# Instala dependencias necesarias para lightningcss y otras librerías nativas
-RUN apk add --no-cache libc6-compat python3 make g++
+# Usa una imagen base oficial de Node.js con Debian
+FROM node:22-slim
 
 # Establece el directorio de trabajo en el contenedor
 WORKDIR /app
