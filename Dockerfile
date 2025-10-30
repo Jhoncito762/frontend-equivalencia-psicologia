@@ -1,33 +1,23 @@
-# Usa una imagen base oficial de Node.js con Debian
-FROM node:22-slim
-
-# Instala herramientas de compilación necesarias para paquetes nativos
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# Usa una imagen base oficial de Bun
+FROM oven/bun:1 AS builder
 
 # Establece el directorio de trabajo en el contenedor
 WORKDIR /app
 
-# Copia el package.json y package-lock.json
-COPY package.json package-lock.json* ./
+# Copia el package.json y bun.lockb
+COPY package.json bun.lockb* ./
 
-# Instala las dependencias
-RUN npm install --frozen-lockfile
-
-# Reconstruir paquetes nativos para la arquitectura correcta
-RUN npm rebuild lightningcss
+# Instala las dependencias incluyendo binarios opcionales
+RUN bun install --frozen-lockfile
 
 # Copia el resto del código de la aplicación
 COPY . .
 
 # Compila la aplicación Next.js
-RUN npm run build
+RUN bun run build
 
 # Expone el puerto que usa la aplicación
 EXPOSE 3000
 
 # Comando para iniciar la aplicación
-CMD ["npm", "start"]
+CMD ["bun", "run", "start"]
