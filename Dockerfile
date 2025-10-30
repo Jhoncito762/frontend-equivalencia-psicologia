@@ -1,5 +1,5 @@
 # Usa Bun sobre Debian (tiene glibc, no musl)
-FROM oven/bun:1-debian AS builder
+FROM oven/bun:1-debian
 
 WORKDIR /app
 
@@ -13,5 +13,6 @@ RUN bun run build
 
 EXPOSE 5000
 ENV PORT=5000
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["bun", "run", "start"]
