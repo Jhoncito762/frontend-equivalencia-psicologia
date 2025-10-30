@@ -17,7 +17,10 @@ COPY . .
 RUN bun run build
 
 # Expone el puerto que usa la aplicación
-EXPOSE 3000
+EXPOSE 5000
+
+# Establecer variable de entorno para el puerto
+ENV PORT=5000
 
 # Comando para iniciar la aplicación
 CMD ["bun", "run", "start"]
