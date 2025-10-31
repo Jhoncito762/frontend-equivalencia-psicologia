@@ -9,6 +9,8 @@ const nextConfig = {
                 pathname: '/imagen-institucional/**',
             },
         ],
+        formats: ['image/avif', 'image/webp'],
+        minimumCacheTTL: 60,
     },
 };
 
