@@ -141,11 +141,11 @@ const page = () => {
         <div className='min-h-screen w-full bg-[#EDEFF0] flex items-center justify-center py-10'>
 
             <div className="bg-white w-[90%] md:w-[40%] rounded-lg shadow-md flex flex-col items-center justify-center px-5 py-10">
-                <div className=" self-start ml-5">
+                <div className="flex justify-center">
                     <BackButton to={'/auth'} />
                 </div>
                 <div>
-                    <img src="https://www.usco.edu.co/imagen-institucional/facultades/ciencias-sociales-y-humanas.png" alt="Logo Ciencias Sociales y Humanas" />
+                    <img src="/sociales-humanas.png" alt="Logo Ciencias Sociales y Humanas" />
                 </div>
                 <div className="flex flex-col items-center my-10 gap-3">
                     <FaChalkboardTeacher className='bg-[#F4E7E8] rounded-full text-[#8F141B] p-4' size={80} />

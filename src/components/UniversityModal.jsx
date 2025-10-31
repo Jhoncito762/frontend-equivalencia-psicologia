@@ -59,20 +59,18 @@ export default function UniversityModal({
 
                     {/* Contenido */}
                     <div className="p-8 text-center">
-                        {/* Logo */}
-                        {showLogo && (
-                            <div className="mb-6 flex justify-center">
-                                <Image
-                                    src="https://www.usco.edu.co/imagen-institucional/facultades/ciencias-sociales-y-humanas.png"
-                                    alt="Universidad Surcolombiana"
-                                    width={200}
-                                    height={80}
-                                    className="h-auto w-48"
-                                />
-                            </div>
-                        )}
-
-                        {/* Icono */}
+                    {/* Logo */}
+                    {showLogo && (
+                        <div className="mb-6 flex justify-center">
+                            <Image
+                                src="/sociales-humanas.png"
+                                alt="Universidad Surcolombiana"
+                                width={200}
+                                height={80}
+                                className="h-auto w-48"
+                            />
+                        </div>
+                    )}                        {/* Icono */}
                         <div className="mb-4 flex justify-center">
                             {isSuccess ? (
                                 <div className=" flex items-center justify-center">

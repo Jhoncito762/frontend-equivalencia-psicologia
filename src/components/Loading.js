@@ -10,7 +10,7 @@ export default function Loading({ message = "Cargando contenido…" }) {
         >
             <div className="flex flex-col items-center gap-4">
                 <img
-                    src="https://www.usco.edu.co/imagen-institucional/logo/precarga-usco.gif"
+                    src="/precarga.gif"
                     alt="Logo USCO animado"
                     className="h-28 w-auto"
                     onError={(e) => {

@@ -224,12 +224,12 @@ const page = () => {
                     </div>
                     <div>
                         <Image
-                            src="https://www.usco.edu.co/imagen-institucional/facultades/ciencias-sociales-y-humanas.png"
+                            src="/sociales-humanas.png"
                             width={340}
                             height={150}
                             alt='Logo Ciencias Sociales y Humanas'
                         />
-                        {/* <img src="https://www.usco.edu.co/imagen-institucional/facultades/ciencias-sociales-y-humanas.png" alt="Logo Ciencias Sociales y Humanas" /> */}
+                        {/* <img src="/sociales-humanas.png" alt="Logo Ciencias Sociales y Humanas" /> */}
                     </div>
                     <div className="flex flex-col items-center my-10 gap-3">
                         <PiStudentFill className='bg-[#F4E7E8] rounded-full text-[#8F141B] p-4' size={80} />

@@ -14,7 +14,7 @@ const page = () => {
         <div className='min-h-screen w-full bg-[#EDEFF0] flex items-center justify-center'>
             <div className="bg-white w-[90%] md:w-[40%] rounded-lg shadow-md flex flex-col items-center justify-center px-5 py-10">
                 <div>
-                    <img src="https://www.usco.edu.co/imagen-institucional/facultades/ciencias-sociales-y-humanas.png" alt="Logo Ciencias Sociales y Humanas" />
+                    <img src="/sociales-humanas.png" alt="Logo Ciencias Sociales y Humanas" />
                 </div>
                 <div className="flex flex-col text-center gap-2 my-15">
                     <h1 className='text-4xl text-[#4D626C] font-bold'>Sistema de Acceso</h1>
