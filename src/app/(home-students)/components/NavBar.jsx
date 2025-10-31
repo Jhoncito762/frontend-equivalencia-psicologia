@@ -20,7 +20,7 @@ const NavBar = () => {
             <div className=" flex h-16 items-center justify-between px-10">
                 <div className="flex  gap-3 justify-between">
                     <Image
-                        src={'https://www.usco.edu.co/imagen-institucional/logo/universidad-surcolombiana-m.png'}
+                        src={'/image.png'}
                         alt='Logo Universidad Surcolombiana'
                         width={200}
                         height={50}

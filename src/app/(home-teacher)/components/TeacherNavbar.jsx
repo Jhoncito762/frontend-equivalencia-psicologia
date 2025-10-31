@@ -27,7 +27,7 @@ const TeacherNavbar = ({ toggleSidebar, isSidebarOpen }) => {
                     
                     <div className="flex items-center gap-3">
                         <Image
-                            src={'https://www.usco.edu.co/imagen-institucional/logo/universidad-surcolombiana-m.png'}
+                            src={'/image.png'}
                             alt='Logo Universidad Surcolombiana'
                             width={200}
                             height={50}
