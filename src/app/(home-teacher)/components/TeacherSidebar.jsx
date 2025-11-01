@@ -3,14 +3,17 @@ import axiosPrivate from '@/apis/axiosPrivate';
 import axiosPublic from '@/apis/axiosPublic';
 import Icon from '@/components/Icon'
 import { useAuthStore } from '@/hooks/authStore';
-import { useRouter } from 'next/navigation'
-import React from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import React, { useMemo } from 'react'
 
-const { MdDashboard, CiLogout, HiChevronLeft, HiChevronRight } = Icon;
+const { MdDashboard, CiLogout, HiChevronLeft, HiChevronRight, FaUsers } = Icon;
 
 const TeacherSidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
     const logout = useAuthStore((state) => state.logout);
+    const decodedToken = useAuthStore((state) => state.decodedToken);
+    const permissions = useAuthStore((state) => state.permissions);
     const router = useRouter()
+    const pathname = usePathname()
 
     const handleLogout = async () => {
         const refresh_token = localStorage.getItem("refresh_token");
@@ -30,20 +33,40 @@ const TeacherSidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) 
         }
     }
 
-    const menuItems = [
-        {
-            id: 'dashboard',
-            name: 'Ver equivalencias',
-            icon: MdDashboard,
-            path: '/dashboard/equivalences',
-            description: 'Gestiona las equivalencias'
-        }
-    ]
+    // Filtrar los items del menú según los roles
+    const menuItems = useMemo(() => {
+        const allMenuItems = [
+            {
+                id: 'dashboard',
+                name: 'Ver equivalencias',
+                icon: MdDashboard,
+                path: '/dashboard/equivalences',
+                description: 'Gestiona las equivalencias',
+                requiredRole: null // Siempre visible para todos
+            },
+            {
+                id: 'teachers',
+                name: 'Docentes',
+                icon: FaUsers,
+                path: '/dashboard/users',
+                description: 'Gestiona los docentes del sistema',
+                requiredRole: 'administrador' // Solo visible para administradores
+            }
+        ];
+
+        const userRoles = decodedToken?.roles || [];
+
+        // Filtrar items según roles
+        return allMenuItems.filter(item => {
+            if (!item.requiredRole) return true; // Sin requisito, siempre visible
+            return userRoles.includes(item.requiredRole);
+        });
+    }, [decodedToken]);
 
     const navigateTo = (path) => {
         router.push(path)
         // Cerrar sidebar en móvil después de navegar
-        if (window.innerWidth < 1024) {
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
             toggleSidebar()
         }
     }
@@ -99,24 +122,26 @@ const TeacherSidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) 
                         <div className="space-y-2">
                             {menuItems.map((item) => {
                                 const IconComponent = item.icon
+                                const isActive = pathname?.startsWith(item.path)
                                 return (
                                     <button
                                         key={item.id}
                                         onClick={() => navigateTo(item.path)}
                                         className={`
                                             w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200
-                                            hover:bg-[#F4E7E8] hover:text-[#8F141B] text-gray-700
                                             group relative
+                                            ${isActive ? 'bg-[#F4E7E8] text-[#8F141B]/70 shadow-md' : 'text-gray-700 hover:bg-[#F4E7E8] hover:text-[#8F141B]'}
                                             ${isCollapsed ? 'justify-center' : 'justify-start'}
                                         `}
                                         title={isCollapsed ? item.name : ''}
+                                        aria-current={isActive ? 'page' : undefined}
                                     >
-                                        <IconComponent className="w-5 h-5 flex-shrink-0" />
+                                        <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#8F141B]/70' : ''}`} />
 
                                         {!isCollapsed && (
                                             <div className="flex-1 text-left">
                                                 <p className="font-medium">{item.name}</p>
-                                                <p className="text-xs text-gray-500 group-hover:text-[#8F141B]/70">
+                                                <p className={`text-xs ${isActive ? 'text-[#8F141B]/70' : 'text-gray-500 group-hover:text-[#8F141B]/70'}`}>
                                                     {item.description}
                                                 </p>
                                             </div>

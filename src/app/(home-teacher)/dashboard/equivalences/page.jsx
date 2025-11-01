@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AiOutlineExclamationCircle } from "react-icons/ai";
-import { FiSearch, FiPlus } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEye, FiEdit2 } from "react-icons/fi";
 import { HiChevronDown } from "react-icons/hi";
-import TablaEstudiantes from "../components/TablaEstudiantes";
+import Table from "@/components/shared/Table";
 import Paginator from "../components/Paginator";
 import FormModal from "../components/FormModal";
 import axiosPrivate from "@/apis/axiosPrivate";
@@ -134,6 +134,51 @@ const Page = () => {
         console.log(`ID del estudiante guardado en sessionStorage: ${id}`);
     };
 
+    const columns = [
+        {
+            header: "ID",
+            accessor: "id",
+            className: "w-16",
+            cellClassName: "w-16 font-medium text-slate-900",
+        },
+        {
+            header: "Nombre Completo",
+            accessor: "nombre_completo",
+            className: "w-1/3",
+            cellClassName: "w-1/3 text-slate-900 truncate",
+        },
+        {
+            header: "Código Estudiantil",
+            accessor: "codigo_estudiantil",
+            className: "w-1/3",
+            cellClassName: "w-1/3 font-mono text-slate-800",
+        },
+        {
+            header: "Opciones",
+            className: "w-48 text-center",
+            cellClassName: "w-48 text-center",
+            cell: (row) => (
+                row.equivalencia ? (
+                    <button
+                        onClick={() => handleVerResultados(row.id)}
+                        className="inline-flex items-center gap-2 bg-[#4D626C] hover:bg-[#4D626C]/80 text-white text-sm px-4 py-2 rounded-lg w-[180px] justify-center transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                    >
+                        <FiEye className="h-4 w-4" />
+                        Ver resultados
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => handleHacerEquivalencia(row.id)}
+                        className="inline-flex items-center gap-2 bg-[#8F141B] hover:bg-[#8F141B]/90 text-white text-sm px-4 py-2 rounded-lg w-[180px] justify-center transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                    >
+                        <FiEdit2 className="h-4 w-4" />
+                        Hacer equivalencia
+                    </button>
+                )
+            ),
+        },
+    ];
+
     // state para controlar modal de registro
 
     return (
@@ -229,10 +274,10 @@ const Page = () => {
                         </button>
                     </div>
                 ) : (
-                    <TablaEstudiantes
-                        estudiantes={estudiantes}
-                        onVerResultados={handleVerResultados}
-                        onHacerEquivalencia={handleHacerEquivalencia}
+                    <Table
+                        columns={columns}
+                        data={estudiantes}
+                        noDataMessage="No se encontraron estudiantes"
                     />
                 )}
             </div>
