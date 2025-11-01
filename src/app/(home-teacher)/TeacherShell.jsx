@@ -1,8 +1,9 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Open_Sans } from "next/font/google";
 import TeacherNavbar from './components/TeacherNavbar';
 import TeacherSidebar from './components/TeacherSidebar';
+import { useAuthStore } from '@/hooks/authStore';
 
 const geistOpen = Open_Sans({
     variable: "--font-open-sans",
@@ -12,6 +13,12 @@ const geistOpen = Open_Sans({
 const TeacherShell = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const initAuth = useAuthStore((state) => state.initAuth);
+
+    // Inicializar autenticación al montar el componente
+    useEffect(() => {
+        initAuth();
+    }, [initAuth]);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
