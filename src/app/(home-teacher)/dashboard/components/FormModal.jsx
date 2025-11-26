@@ -6,6 +6,9 @@ import InputItem from "@/components/InputItem";
 import axiosPublic from "@/apis/axiosPublic";
 import UniversityModal from "@/components/UniversityModal";
 import DataTreatmentModal from "@/components/DataTreatmentModal";
+import dynamic from 'next/dynamic';
+
+const Select = dynamic(() => import('react-select'), { ssr: false });
 
 const { IoDocumentTextOutline } = Icon;
 
@@ -17,6 +20,8 @@ export default function FormModal({ isOpen, onClose }) {
     const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [showExistingModal, setShowExistingModal] = useState(false);
     const [showDataTreatmentModal, setShowDataTreatmentModal] = useState(false);
+    const [cohortes, setCohortes] = useState([]);
+    const [selectedCohorte, setSelectedCohorte] = useState(null);
     const [modalConfig, setModalConfig] = useState({
         type: "success",
         title: "",
@@ -28,12 +33,14 @@ export default function FormModal({ isOpen, onClose }) {
         nombres: "",
         apellidos: "",
         codigo_estudiantil: "",
+        cohorte: "",
     });
 
     const [formData, setFormData] = useState({
         nombres: "",
         apellidos: "",
         codigo_estudiantil: "",
+        cohorte: "",
         acepta_tratamiento_datos: false,
         version_politicas: "1.0.0",
     });
@@ -45,19 +52,47 @@ export default function FormModal({ isOpen, onClose }) {
                 nombres: "",
                 apellidos: "",
                 codigo_estudiantil: "",
+                cohorte: "",
                 acepta_tratamiento_datos: false,
                 version_politicas: "1.0.0",
             });
             setError(null);
             setLoading(false);
             setEstudianteId(null);
+            setSelectedCohorte(null);
             setShowUniversityModal(false);
             setShowExistingModal(false);
             setShowDataTreatmentModal(false);
             setModalConfig({ type: "success", title: "", message: "", onAccept: null });
-            setFieldErrors({ nombres: "", apellidos: "", codigo_estudiantil: "" });
+            setFieldErrors({ nombres: "", apellidos: "", codigo_estudiantil: "", cohorte: "" });
         }
     }, [isOpen]);
+
+    // Cargar cohortes al abrir el modal
+    useEffect(() => {
+        if (isOpen) {
+            getCohortes();
+        }
+    }, [isOpen]);
+
+    const getCohortes = async () => {
+        try {
+            const response = await axiosPublic.get(
+                `${process.env.NEXT_PUBLIC_COHORTES}`
+            );
+
+            const { data } = response.data;
+
+            const cohortesOptions = data.map(cohorte => ({
+                value: cohorte,
+                label: cohorte
+            }));
+
+            setCohortes(cohortesOptions);
+        } catch (error) {
+            console.error('No se pudieron traer las cohortes', error);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -155,15 +190,17 @@ export default function FormModal({ isOpen, onClose }) {
             nombres: formData.nombres.trim(),
             apellidos: formData.apellidos.trim(),
             codigo_estudiantil: formData.codigo_estudiantil.trim(),
+            cohorte: formData.cohorte.trim(),
         };
 
         const newErrors = {
             nombres: trimmedData.nombres ? "" : "Campo obligatorio",
             apellidos: trimmedData.apellidos ? "" : "Campo obligatorio",
             codigo_estudiantil: trimmedData.codigo_estudiantil ? "" : "Campo obligatorio",
+            cohorte: trimmedData.cohorte ? "" : "Campo obligatorio",
         };
 
-        if (!trimmedData.nombres || !trimmedData.apellidos || !trimmedData.codigo_estudiantil) {
+        if (!trimmedData.nombres || !trimmedData.apellidos || !trimmedData.codigo_estudiantil || !trimmedData.cohorte) {
             setFieldErrors(newErrors);
             return;
         }
@@ -234,19 +271,19 @@ export default function FormModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-lg mx-auto transform transition-all duration-300 scale-100 relative overflow-hidden">
-                <div className="bg-[#CE932C] rounded-t-2xl p-6 text-center">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <IoDocumentTextOutline className="w-8 h-8 text-white" />
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-lg mx-auto transform transition-all duration-300 scale-100 relative my-8">
+                <div className="bg-[#CE932C] rounded-t-2xl p-4 sm:p-6 text-center">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                        <IoDocumentTextOutline className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-1">Registro de Estudiante</h2>
-                    <p className="text-white/90 text-sm">Sistema de Equivalencias Académicas</p>
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Registro de Estudiante</h2>
+                    <p className="text-white/90 text-xs sm:text-sm">Sistema de Equivalencias Académicas</p>
                 </div>
 
-                <div className="p-6">
-                    <div className="text-center mb-6">
-                        <p className="text-[#4D626C] text-base leading-relaxed">
+                <div className="p-4 sm:p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
+                    <div className="text-center mb-4 sm:mb-6">
+                        <p className="text-[#4D626C] text-sm sm:text-base leading-relaxed">
                             Complete los datos del estudiante para iniciar el proceso de equivalencia de materias.
                         </p>
                     </div>
@@ -279,6 +316,46 @@ export default function FormModal({ isOpen, onClose }) {
                             onChange={handleInputChange}
                             error={fieldErrors.codigo_estudiantil}
                         />
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Cohorte
+                            </label>
+                            <Select
+                                options={cohortes}
+                                value={selectedCohorte}
+                                onChange={(option) => {
+                                    setSelectedCohorte(option);
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        cohorte: option?.value || ''
+                                    }));
+                                    if (fieldErrors.cohorte) {
+                                        setFieldErrors(prev => ({
+                                            ...prev,
+                                            cohorte: ''
+                                        }));
+                                    }
+                                }}
+                                placeholder="Selecciona el cohorte"
+                                isClearable
+                                classNamePrefix='react-select'
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        width: '100%',
+                                        minHeight: '48px',
+                                        borderColor: fieldErrors.cohorte ? '#ef4444' : '#d1d5db',
+                                        '&:hover': {
+                                            borderColor: fieldErrors.cohorte ? '#ef4444' : '#8F141B'
+                                        },
+                                        boxShadow: state.isFocused ? (fieldErrors.cohorte ? '0 0 0 1px #ef4444' : '0 0 0 1px #8F141B') : 'none'
+                                    })
+                                }}
+                            />
+                            {fieldErrors.cohorte && (
+                                <p className="mt-1 text-sm text-red-600">{fieldErrors.cohorte}</p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-start gap-3 mb-4">
@@ -344,19 +421,19 @@ export default function FormModal({ isOpen, onClose }) {
                     onClose={() => setShowDataTreatmentModal(false)}
                 />
                 {showExistingModal && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-40 p-4 rounded-2xl">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 scale-100">
-                            <div className="bg-[#CE932C] rounded-t-2xl p-6 text-center">
-                                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <IoDocumentTextOutline className="w-8 h-8 text-white" />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-40 p-4 rounded-2xl overflow-y-auto">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all duration-300 scale-100 my-4">
+                            <div className="bg-[#CE932C] rounded-t-2xl p-4 sm:p-6 text-center">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                                    <IoDocumentTextOutline className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                 </div>
-                                <h2 className="text-xl font-bold text-white mb-1">Equivalencia Existente</h2>
-                                <p className="text-white/90 text-sm">Ya tienes un proceso registrado</p>
+                                <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Equivalencia Existente</h2>
+                                <p className="text-white/90 text-xs sm:text-sm">Ya tienes un proceso registrado</p>
                             </div>
 
-                            <div className="p-6">
-                                <div className="text-center mb-6">
-                                    <p className="text-[#4D626C] text-base leading-relaxed">
+                            <div className="p-4 sm:p-6">
+                                <div className="text-center mb-4 sm:mb-6">
+                                    <p className="text-[#4D626C] text-sm sm:text-base leading-relaxed">
                                         El código estudiantil ya tiene una equivalencia registrada en el sistema.
                                         <span className="font-medium text-[#8F141B]"> ¿Desea consultar los resultados?</span>
                                     </p>
@@ -365,13 +442,13 @@ export default function FormModal({ isOpen, onClose }) {
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                         onClick={() => setShowExistingModal(false)}
-                                        className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium border border-gray-200 hover:border-gray-300"
+                                        className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium border border-gray-200 hover:border-gray-300 text-sm sm:text-base"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         onClick={handleViewResultsFromExisting}
-                                        className="flex-1 px-6 py-3 bg-[#CE932C] text-white rounded-xl hover:from-[#7A1018] hover:to-[#B8832A] transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                        className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#CE932C] text-white rounded-xl hover:from-[#7A1018] hover:to-[#B8832A] transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base"
                                     >
                                         Ver Resultados
                                     </button>
