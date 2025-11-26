@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import InputItem from "@/components/InputItem";
 import Icon from "@/components/Icon";
 import DataTreatmentModal from "@/components/DataTreatmentModal";
+import dynamic from 'next/dynamic';
+
+const Select = dynamic(() => import('react-select'), { ssr: false });
 
 const { FaChalkboardTeacher, HiOutlineXMark, FaEye, FaEyeSlash } = Icon;
 
@@ -15,11 +18,19 @@ const FormModalTeacher = ({
     loading = false,
     errors = {},
     errorMessage = "",
+    cohorteData = {}
 }) => {
     if (!isOpen) return null;
 
     const [showDataTreatmentModal, setShowDataTreatmentModal] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [selectedCohorte, setSelectedCohorte] = useState(null);
+    const [selectedEstado, setSelectedEstado] = useState({ value: true, label: 'Activo' });
+
+    const estadoOptions = [
+        { value: true, label: 'Activo' },
+        { value: false, label: 'Inactivo' }
+    ];
 
 
     const handleInputChange = (e) => {
@@ -32,19 +43,14 @@ const FormModalTeacher = ({
         onChange?.(name, checked);
     };
 
-    const handleSelectChange = (e) => {
-        const { value } = e.target;
-        onChange?.("estado", value === "true");
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
         onSubmit?.();
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
                 <div className="bg-gradient-to-r from-[#8F141B] to-[#CE932C] p-6 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-white">
                         <span className="bg-white/20 rounded-full p-3">
@@ -135,20 +141,60 @@ const FormModalTeacher = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
+                        <div className="w-full">
                             <label className="text-[#4D626C] font-medium block mb-2">
                                 Estado del docente
                             </label>
-                            <select
-                                name="estado"
-                                value={String(formData.estado)}
-                                onChange={handleSelectChange}
-                                disabled={loading}
-                                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8F141B]/40"
-                            >
-                                <option value="true">Activo</option>
-                                <option value="false">Inactivo</option>
-                            </select>
+                            <Select
+                                options={estadoOptions}
+                                value={selectedEstado}
+                                onChange={(option) => {
+                                    setSelectedEstado(option);
+                                    onChange?.("estado", option?.value ?? true);
+                                }}
+                                placeholder="Selecciona el estado"
+                                isDisabled={loading}
+                                classNamePrefix='react-select'
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        width: '100%',
+                                        minHeight: '48px',
+                                        borderColor: '#d1d5db',
+                                        '&:hover': {
+                                            borderColor: '#8F141B'
+                                        }
+                                    })
+                                }}
+                            />
+                        </div>
+                        <div className="w-full">
+                            <label className="text-[#4D626C] font-medium block mb-2">
+                                Cohorte
+                            </label>
+                            <Select
+                                options={cohorteData}
+                                value={selectedCohorte}
+                                onChange={(option) => {
+                                    setSelectedCohorte(option);
+                                    onChange?.("cohorte", option?.value || '');
+                                }}
+                                placeholder="Selecciona la cohorte"
+                                isClearable
+                                isDisabled={loading}
+                                classNamePrefix='react-select'
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        width: '100%',
+                                        minHeight: '48px',
+                                        borderColor: '#d1d5db',
+                                        '&:hover': {
+                                            borderColor: '#8F141B'
+                                        }
+                                    })
+                                }}
+                            />
                         </div>
 
 

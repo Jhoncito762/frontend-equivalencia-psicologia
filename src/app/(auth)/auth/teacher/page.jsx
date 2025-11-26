@@ -99,7 +99,14 @@ const page = () => {
 
             const token = response.data.access_token;
             const refresh_token = response.data.refresh_token;
+            const userCohorte = response.data.user?.cohorte;
+            
             setTokens(token, refresh_token);
+            
+            // Guardar cohorte del profesor en localStorage si existe
+            if (userCohorte) {
+                localStorage.setItem('teacher_cohorte', userCohorte);
+            }
 
             if (token) {
                 setModalConfig({

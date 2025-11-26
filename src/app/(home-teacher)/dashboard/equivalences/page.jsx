@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AiOutlineExclamationCircle } from "react-icons/ai";
 import { FiSearch, FiPlus, FiEye, FiEdit2 } from "react-icons/fi";
@@ -8,12 +8,17 @@ import Table from "@/components/shared/Table";
 import Paginator from "../components/Paginator";
 import FormModal from "../components/FormModal";
 import axiosPrivate from "@/apis/axiosPrivate";
+import axiosPublic from "@/apis/axiosPublic";
 import InputItem from "@/components/InputItem";
+import { useAuthStore } from "@/hooks/authStore";
 
 const Page = () => {
     const router = useRouter();
+    const decodedToken = useAuthStore((state) => state.decodedToken);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterEstado, setFilterEstado] = useState("todos");
+    const [filterCohorte, setFilterCohorte] = useState("todas");
+    const [cohortes, setCohortes] = useState([]);
     const [estudiantes, setEstudiantes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -23,6 +28,12 @@ const Page = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
+
+    // Verificar si el usuario es administrador
+    const isAdmin = useMemo(() => {
+        const userRoles = decodedToken?.roles || [];
+        return userRoles.includes('administrador');
+    }, [decodedToken]);
 
     const construirURL = () => {
         const endpoint = process.env.NEXT_PUBLIC_USER_DATA;
@@ -37,6 +48,20 @@ const Page = () => {
         // Parámetros dinámicos - código estudiantil
         if (searchTerm.trim() !== '') {
             params.append('codigo_estudiantil', searchTerm.trim());
+        }
+
+        // Parámetros dinámicos - cohorte
+        if (isAdmin) {
+            // Si es administrador, usa el filtro seleccionado
+            if (filterCohorte !== 'todas' && filterCohorte.trim() !== '') {
+                params.append('cohorte', filterCohorte.trim());
+            }
+        } else {
+            // Si no es administrador, aplica el cohorte del profesor automáticamente
+            const teacherCohorte = localStorage.getItem('teacher_cohorte');
+            if (teacherCohorte) {
+                params.append('cohorte', teacherCohorte);
+            }
         }
 
         // Parámetros dinámicos - tiene equivalencias
@@ -70,6 +95,7 @@ const Page = () => {
                 // Usar directamente el campo tiene_equivalencia del backend
                 equivalencia: estudiante.tiene_equivalencia,
                 email: estudiante.email,
+                cohorte: estudiante.cohorte ?? 'N/A',
                 estado: estudiante.estado,
                 created_at: estudiante.created_at,
                 updated_at: estudiante.updated_at
@@ -86,10 +112,28 @@ const Page = () => {
         }
     };
 
+    // Función para obtener cohortes disponibles
+    const obtenerCohortes = async () => {
+        try {
+            const response = await axiosPublic.get(
+                `${process.env.NEXT_PUBLIC_COHORTES}`
+            );
+
+            const { data } = response.data;
+            setCohortes(data || []);
+        } catch (error) {
+            console.error('No se pudieron traer las cohortes', error);
+            setCohortes([]);
+        }
+    };
+
     // Efecto para cargar datos iniciales
     useEffect(() => {
         obtenerEstudiantes();
-    }, []);
+        if (isAdmin) {
+            obtenerCohortes();
+        }
+    }, [isAdmin]);
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -101,7 +145,7 @@ const Page = () => {
         }, 500); // Espera 500ms después de que el usuario deje de escribir
 
         return () => clearTimeout(timeoutId);
-    }, [searchTerm, filterEstado]);
+    }, [searchTerm, filterEstado, filterCohorte]);
 
     useEffect(() => {
         obtenerEstudiantes();
@@ -144,14 +188,20 @@ const Page = () => {
         {
             header: "Nombre Completo",
             accessor: "nombre_completo",
-            className: "w-1/3",
+            className: "w-1/4",
             cellClassName: "w-1/3 text-slate-900 truncate",
         },
         {
             header: "Código Estudiantil",
             accessor: "codigo_estudiantil",
-            className: "w-1/3",
-            cellClassName: "w-1/3 font-mono text-slate-800",
+            className: "w-1/4",
+            cellClassName: "w-1/4 font-mono text-slate-800",
+        },
+        {
+            header: "Cohorte",
+            accessor: "cohorte",
+            className: "w-1/6",
+            cellClassName: "w-1/6 text-slate-800",
         },
         {
             header: "Opciones",
@@ -194,35 +244,43 @@ const Page = () => {
             </div>
 
             {/* Filtros */}
-            <div className="w-full bg-white rounded-lg shadow-md flex flex-col border border-gray-300 px-6 py-6 gap-4">
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                    {/* Buscador */}
-                    <div className="flex-1">
-                        <label className="text-sm font-medium mb-2 block text-slate-900">
-                            Buscar por código estudiantil
+            <div className="w-full bg-white rounded-lg shadow-md border border-gray-300 px-6 py-6 gap-6 flex flex-col">
+                {/* Título de la sección de filtros */}
+                <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <h2 className="text-lg font-semibold text-slate-900">Filtros de búsqueda</h2>
+                </div>
+
+                {/* Contenedor de filtros en grid responsive */}
+                <div className={`grid gap-4 ${
+                    isAdmin 
+                        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                        : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]'
+                }`}>
+                    {/* Buscador por código */}
+                    <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-2 text-slate-900">
+                            Código estudiantil
                         </label>
-                        <div className="relative">
-                            <InputItem
-                                type="text"
-                                placeholder="Ej: 202122003243"
-                                value={searchTerm}
-                                onChange={handleSearchTermChange}
-                                maxLength={15}
-                                inputMode="numeric"
-                            />
-                        </div>
+                        <InputItem
+                            type="text"
+                            placeholder="Ej: 202122003243"
+                            value={searchTerm}
+                            onChange={handleSearchTermChange}
+                            maxLength={15}
+                            inputMode="numeric"
+                        />
                     </div>
 
-                    {/* Select */}
-                    <div className="w-full md:w-64">
-                        <label className="text-sm font-medium mb-2 block text-slate-900">
-                            Filtrar por estado
+                    {/* Filtro por estado */}
+                    <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-2 text-slate-900">
+                            Estado
                         </label>
                         <div className="relative">
                             <select
                                 value={filterEstado}
                                 onChange={(e) => setFilterEstado(e.target.value)}
-                                className="w-full appearance-none rounded-md border border-slate-300 bg-white text-slate-900 px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50"
+                                className="w-full appearance-none rounded-md border border-slate-300 bg-white text-slate-900 px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50 hover:border-slate-400 transition-colors"
                             >
                                 <option value="todos">Todos</option>
                                 <option value="con-equivalencia">Con equivalencia</option>
@@ -231,24 +289,49 @@ const Page = () => {
                         </div>
                     </div>
 
-                    {/* Botón */}
-                    <button
-                        type="button"
-                        onClick={() => setShowFormModal(true)}
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium bg-[#8F141B] hover:bg-[#8F141B]/90 text-white focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50"
-                    >
-                        <FiPlus className="h-4 w-4" />
-                        Realizar nueva equivalencia
-                    </button>
+                    {/* Filtro por Cohorte - Solo visible para administradores */}
+                    {isAdmin && (
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium mb-2 text-slate-900">
+                                Cohorte
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={filterCohorte}
+                                    onChange={(e) => setFilterCohorte(e.target.value)}
+                                    className="w-full appearance-none rounded-md border border-slate-300 bg-white text-slate-900 px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50 hover:border-slate-400 transition-colors"
+                                >
+                                    <option value="todas">Todas</option>
+                                    {cohortes.map((cohorte, index) => (
+                                        <option key={index} value={cohorte}>
+                                            {cohorte}
+                                        </option>
+                                    ))}
+                                </select>
+                                <HiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Botón de acción */}
+                    <div className="flex flex-col justify-end">
+                        <button
+                            type="button"
+                            onClick={() => setShowFormModal(true)}
+                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium bg-[#8F141B] hover:bg-[#8F141B]/90 text-white focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50 transition-all shadow-sm hover:shadow-md h-[42px]"
+                        >
+                            <FiPlus className="h-4 w-4" />
+                            <span className="hidden sm:inline">Realizar nueva equivalencia</span>
+                            <span className="sm:hidden">Nueva equivalencia</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Nota */}
-                <div className="bg-[#E5DDB8] px-3 py-2 rounded-lg border border-[#C7B363] flex gap-3">
-                    <AiOutlineExclamationCircle size={25} />
-                    <span className="text-sm">
-                        <span className="font-bold">Nota:</span> El botón "Realizar nueva
-                        equivalencia" es para estudiantes que no aparecen en la tabla. Si el
-                        estudiante ya está registrado, utiliza las opciones de la tabla.
+                {/* Nota informativa */}
+                <div className="bg-[#E5DDB8] px-4 py-3 rounded-lg border border-[#C7B363] flex gap-3 items-start">
+                    <AiOutlineExclamationCircle className="flex-shrink-0 mt-0.5" size={20} />
+                    <span className="text-sm text-slate-800">
+                        <span className="font-bold">Nota:</span> El botón "Realizar nueva equivalencia" es para estudiantes que no aparecen en la tabla. Si el estudiante ya está registrado, utiliza las opciones de la tabla.
                     </span>
                 </div>
             </div>

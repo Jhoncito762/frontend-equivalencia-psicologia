@@ -1,13 +1,16 @@
 'use client'
 import Icon from '@/components/Icon'
 import InputItem from '@/components/InputItem';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import BackButton from '@/components/BackButton';
 import axiosPublic from '@/apis/axiosPublic';
 import UniversityModal from '@/components/UniversityModal';
 import DataTreatmentModal from '@/components/DataTreatmentModal';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+
+const Select = dynamic(() => import('react-select'), { ssr: false });
 
 const { PiStudentFill, CiLogin, IoDocumentTextOutline } = Icon;
 
@@ -21,6 +24,8 @@ const page = () => {
     const [estudianteId, setEstudianteId] = useState(null);
     const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [showDataTreatmentModal, setShowDataTreatmentModal] = useState(false);
+    const [cohortes, setCohortes] = useState([])
+    const [selectedCohorte, setSelectedCohorte] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({
         nombres: '',
         apellidos: '',
@@ -37,6 +42,7 @@ const page = () => {
         nombres: "",
         apellidos: "",
         codigo_estudiantil: "",
+        cohorte: '',
         acepta_tratamiento_datos: false,
         version_politicas: "1.0.0"
     });
@@ -78,6 +84,32 @@ const page = () => {
     };
 
     const resolveStudentId = (payload) => payload?.estudiante_id ?? payload?.id ?? null;
+
+
+    useEffect(() => {
+        getCohortes();
+    }, []);
+
+    const getCohortes = async () => {
+        try {
+            const response = await axiosPublic.get(
+                `${process.env.NEXT_PUBLIC_COHORTES}`
+            )
+
+            const { data } = response.data
+
+            // Transformar el array de strings a formato react-select
+            const cohortesOptions = data.map(cohorte => ({
+                value: cohorte,
+                label: cohorte
+            }));
+
+            setCohortes(cohortesOptions)
+
+        } catch (error) {
+            console.error('No se pudieron traer las cohortes', error)
+        }
+    }
 
     const handleVerificationFlow = async (payload, trimmedValues) => {
         const studentId = resolveStudentId(payload);
@@ -130,22 +162,24 @@ const page = () => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault?.(); 
+        e.preventDefault?.();
         setError(null);
 
         const trimmedData = {
             nombres: formData.nombres.trim(),
             apellidos: formData.apellidos.trim(),
-            codigo_estudiantil: formData.codigo_estudiantil.trim()
+            codigo_estudiantil: formData.codigo_estudiantil.trim(),
+            cohortes: formData.cohorte.trim()
         };
 
         const newErrors = {
             nombres: trimmedData.nombres ? '' : 'Campo obligatorio',
             apellidos: trimmedData.apellidos ? '' : 'Campo obligatorio',
-            codigo_estudiantil: trimmedData.codigo_estudiantil ? '' : 'Campo obligatorio'
+            codigo_estudiantil: trimmedData.codigo_estudiantil ? '' : 'Campo obligatorio',
+            cohortes: trimmedData.cohortes ? '' : 'Campo obligatorio',
         };
 
-        if (!trimmedData.nombres || !trimmedData.apellidos || !trimmedData.codigo_estudiantil) {
+        if (!trimmedData.nombres || !trimmedData.apellidos || !trimmedData.codigo_estudiantil || !trimmedData.cohortes) {
             setFieldErrors(newErrors);
             return;
         }
@@ -276,6 +310,33 @@ const page = () => {
                             onChange={handleInputChange}
                             error={fieldErrors.codigo_estudiantil}
                         />
+                        <div className="w-full">
+                            <Select
+                                options={cohortes}
+                                value={selectedCohorte}
+                                onChange={(option) => {
+                                    setSelectedCohorte(option);
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        cohorte: option?.value || ''
+                                    }));
+                                }}
+                                placeholder="Selecciona tu cohorte"
+                                isClearable
+                                classNamePrefix='react-select'
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        width: '100%',
+                                        minHeight: '48px',
+                                        borderColor: '#d1d5db',
+                                        '&:hover': {
+                                            borderColor: '#8F141B'
+                                        }
+                                    })
+                                }}
+                            />
+                        </div>
                     </div>
 
                     <div className="w-[80%] flex items-start gap-3 mb-6">
@@ -336,7 +397,7 @@ const page = () => {
                         <div className="p-6">
                             <div className="text-center mb-6">
                                 <p className="text-[#4D626C] text-base leading-relaxed">
-                                    El código estudiantil ya tiene una equivalencia registrada en el sistema. 
+                                    El código estudiantil ya tiene una equivalencia registrada en el sistema.
                                     <span className="font-medium text-[#8F141B]"> ¿Desea consultar los resultados?</span>
                                 </p>
                             </div>

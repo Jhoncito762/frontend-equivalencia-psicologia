@@ -36,6 +36,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("fcm_token");
+    localStorage.removeItem("teacher_cohorte");
     set({
       token: null,
       refreshToken: null,

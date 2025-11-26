@@ -8,6 +8,8 @@ import React, { useEffect, useState } from 'react'
 import Paginator from '../components/Paginator';
 import FormModalTeacher from './components/FormModalTeacher';
 import ConfirmDeleteTeacher from './components/ConfirmDeleteTeacher';
+import axiosPublic from '@/apis/axiosPublic';
+import UniversityModal from '@/components/UniversityModal';
 
 const { FiPlus, AiOutlineExclamationCircle, FiTrash2 } = Icon;
 
@@ -25,6 +27,15 @@ const page = () => {
     const [teacherToDelete, setTeacherToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [deleteError, setDeleteError] = useState("");
+    const [cohortes, setCohortes] = useState([])
+    const [selectedCohorte, setSelectedCohorte] = useState(null);
+    const [showUniversityModal, setShowUniversityModal] = useState(false);
+    const [modalConfig, setModalConfig] = useState({
+        type: 'success',
+        title: '',
+        message: '',
+        onAccept: null
+    });
 
     // Estados para paginación
     const [currentPage, setCurrentPage] = useState(1);
@@ -38,7 +49,8 @@ const page = () => {
         password: "",
         estado: true,
         acepta_tratamiento_datos: false,
-        version_politicas: "1.0.0"
+        version_politicas: "1.0.0",
+        cohorte: ''
     });
 
     const [formErrors, setFormErrors] = useState({
@@ -84,6 +96,7 @@ const page = () => {
                     email: teacher.email ?? "Sin correo",
                     roles,
                     estado_label: teacher.estado ? "Activo" : "Inactivo",
+                    cohortes: teacher.cohorte ?? 'N/A'
                 };
             }).filter((teacher) => {
                 if (!searchFilter) return true;
@@ -107,7 +120,28 @@ const page = () => {
 
     useEffect(() => {
         getTeachers();
+        getCohortes();
     }, []);
+
+    const getCohortes = async () => {
+        try {
+            const response = await axiosPublic.get(
+                `${process.env.NEXT_PUBLIC_COHORTES}`
+            )
+
+            const { data } = response.data
+
+            const cohortesOptions = data.map(cohorte => ({
+                value: cohorte,
+                label: cohorte
+            }));
+
+            setCohortes(cohortesOptions)
+
+        } catch (error) {
+            console.error('No se pudieron traer las cohortes', error)
+        }
+    }
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -219,20 +253,26 @@ const page = () => {
         {
             header: "Nombre Completo",
             accessor: "nombre_completo",
-            className: "min-w-[200px]",
-            cellClassName: "min-w-[200px] text-slate-900 truncate",
+            className: "min-w-[220px] w-[220px]",
+            cellClassName: "min-w-[220px] w-[220px] text-slate-900 break-words",
         },
         {
             header: "Correo electrónico",
             accessor: "email",
-            className: "min-w-[220px]",
-            cellClassName: "min-w-[220px] font-mono text-slate-800 truncate",
+            className: "min-w-[240px] w-[240px]",
+            cellClassName: "min-w-[240px] w-[240px] font-mono text-slate-800 break-all",
         },
         {
             header: "Roles",
             accessor: "roles",
-            className: "min-w-[180px]",
-            cellClassName: "min-w-[180px] text-slate-800",
+            className: "min-w-[120px]",
+            cellClassName: "min-w-[120px] text-slate-800",
+        },
+        {
+            header: "Cohorte",
+            accessor: "cohortes",
+            className: "min-w-[100px]",
+            cellClassName: "min-w-[100px] text-slate-800",
         },
         {
             header: "Estado",
@@ -280,6 +320,11 @@ const page = () => {
             return;
         }
 
+        if (!formData.acepta_tratamiento_datos) {
+            setModalError("Debe aceptar el tratamiento de datos para continuar.");
+            return;
+        }
+
         try {
             setFormLoading(true);
             setModalError("");
@@ -290,6 +335,7 @@ const page = () => {
                 email: trimmed.email,
                 password: trimmed.password,
                 estado: formData.estado,
+                cohorte: formData.cohorte,
                 "roles": [
                     2
                 ],
@@ -300,10 +346,31 @@ const page = () => {
             await axiosPrivate.post(`${process.env.NEXT_PUBLIC_USER_DATA}`, payload);
 
             handleCloseModal();
+            
+            setModalConfig({
+                type: 'success',
+                title: 'Docente Registrado',
+                message: 'El docente ha sido registrado exitosamente en el sistema.',
+                onAccept: () => setShowUniversityModal(false)
+            });
+            setShowUniversityModal(true);
+            
             await getTeachers();
         } catch (createError) {
             console.error('Error al crear docente:', createError);
-            setModalError(createError.response?.data?.message || createError.message || 'No se pudo registrar el docente');
+            handleCloseModal();
+            
+            const errorMsg = createError.response?.data?.message || createError.message || 'No se pudo registrar el docente';
+            setModalConfig({
+                type: 'error',
+                title: 'Error al Registrar',
+                message: errorMsg,
+                onAccept: () => {
+                    setShowUniversityModal(false);
+                    setShowFormModal(true);
+                }
+            });
+            setShowUniversityModal(true);
         } finally {
             setFormLoading(false);
         }
@@ -319,39 +386,48 @@ const page = () => {
                     Administra los docentes creados en el sistema.
                 </span>
             </div>
-            <div className="w-full bg-white rounded-lg shadow-md flex flex-col border border-gray-300 px-6 py-6 gap-4">
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                    {/* Buscador */}
-                    <div className="flex-1">
-                        <label className="text-sm font-medium mb-2 block text-slate-900">
-                            Buscar por nombre
-                        </label>
-                        <div className="relative">
-                            <InputItem
-                                type="text"
-                                placeholder="Ej: Juan Perdomo"
-                                value={searchTerm}
-                                onChange={handleSearchTermChange}
-                                maxLength={15}
-                                inputMode="text"
-                            />
-                        </div>
-                    </div>
-                    {/* Botón */}
-                    <button
-                        type="button"
-                        onClick={handleOpenModal}
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-3 text-sm font-medium bg-[#8F141B] hover:bg-[#8F141B]/90 text-white focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50"
-                    >
-                        <FiPlus className="h-4 w-4" />
-                        Registrar nuevo docente
-                    </button>
+            <div className="w-full bg-white rounded-lg shadow-md border border-gray-300 px-6 py-6 gap-6 flex flex-col">
+                {/* Título de la sección de filtros */}
+                <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                    <h2 className="text-lg font-semibold text-slate-900">Filtros de búsqueda</h2>
                 </div>
-                <div className="bg-[#E5DDB8] px-3 py-2 rounded-lg border border-[#C7B363] flex gap-3">
-                    <AiOutlineExclamationCircle size={25} />
-                    <span className="text-sm">
-                        <span className="font-bold">Nota:</span> El botón "Registrar nuevo docente", es para crear unicamente
-                        docentes.
+
+                {/* Contenedor de filtros en grid responsive */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+                    {/* Buscador por nombre */}
+                    <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-2 text-slate-900">
+                            Nombre del docente
+                        </label>
+                        <InputItem
+                            type="text"
+                            placeholder="Ej: Juan Perdomo"
+                            value={searchTerm}
+                            onChange={handleSearchTermChange}
+                            maxLength={15}
+                            inputMode="text"
+                        />
+                    </div>
+
+                    {/* Botón de acción */}
+                    <div className="flex flex-col justify-end">
+                        <button
+                            type="button"
+                            onClick={handleOpenModal}
+                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium bg-[#8F141B] hover:bg-[#8F141B]/90 text-white focus:outline-none focus:ring-2 focus:ring-[#8F141B]/50 transition-all shadow-sm hover:shadow-md h-[42px]"
+                        >
+                            <FiPlus className="h-4 w-4" />
+                            <span className="hidden sm:inline">Registrar nuevo docente</span>
+                            <span className="sm:hidden">Nuevo docente</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Nota informativa */}
+                <div className="bg-[#E5DDB8] px-4 py-3 rounded-lg border border-[#C7B363] flex gap-3 items-start">
+                    <AiOutlineExclamationCircle className="flex-shrink-0 mt-0.5" size={20} />
+                    <span className="text-sm text-slate-800">
+                        <span className="font-bold">Nota:</span> El botón "Registrar nuevo docente" es para crear únicamente docentes en el sistema.
                     </span>
                 </div>
             </div>
@@ -406,6 +482,7 @@ const page = () => {
                 loading={formLoading}
                 errors={formErrors}
                 errorMessage={modalError}
+                cohorteData={cohortes}
             />
 
             <ConfirmDeleteTeacher
@@ -415,6 +492,19 @@ const page = () => {
                 onConfirm={handleDeleteTeacher}
                 loading={deleteLoading}
                 errorMessage={deleteError}
+            />
+
+            <UniversityModal
+                isOpen={showUniversityModal}
+                onClose={() => {
+                    setShowUniversityModal(false);
+                    if (modalConfig.onAccept) {
+                        modalConfig.onAccept();
+                    }
+                }}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
             />
         </div>
 
