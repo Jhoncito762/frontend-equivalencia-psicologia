@@ -159,34 +159,6 @@ const TeacherSidebar = ({ isOpen, toggleSidebar, isCollapsed, toggleCollapse }) 
                             })}
                         </div>
                     </nav>
-
-                    {/* Footer con logout */}
-                    <div className="p-4 border-t border-gray-200">
-                        <button
-                            onClick={handleLogout}
-                            className={`
-                                w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200
-                                hover:bg-red-50 hover:text-red-600 text-gray-700
-                                group relative
-                                ${isCollapsed ? 'justify-center' : 'justify-start'}
-                            `}
-                            title={isCollapsed ? 'Cerrar Sesión' : ''}
-                        >
-                            <CiLogout className="w-5 h-5 flex-shrink-0" />
-
-                            {!isCollapsed && (
-                                <span className="font-medium">Cerrar Sesión</span>
-                            )}
-
-                            {/* Tooltip para vista colapsada */}
-                            {isCollapsed && (
-                                <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    Cerrar Sesión
-                                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-800 rotate-45"></div>
-                                </div>
-                            )}
-                        </button>
-                    </div>
                 </div>
             </aside>
         </>
