@@ -102,6 +102,10 @@ export default function FormModal({ isOpen, onClose }) {
             nextValue = value.replace(/\D/g, "").slice(0, 15);
         }
 
+        if (name === "nombres" || name === "apellidos") {
+            nextValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, "");
+        }
+
         if (fieldErrors[name]) {
             setFieldErrors((prev) => ({
                 ...prev,
