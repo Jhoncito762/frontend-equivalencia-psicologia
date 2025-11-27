@@ -77,15 +77,54 @@ const page = () => {
         }
     };
 
-    // Obtener datos del estudiante desde sessionStorage
+    // Obtener datos del estudiante desde el backend
     useEffect(() => {
-        const data = sessionStorage.getItem('studentData');
-        if (data) {
-            setStudentData(JSON.parse(data));
-        } else {
-            setError('No se encontraron datos del estudiante. Por favor, inicia sesión nuevamente.');
-            setLoading(false);
-        }
+        const fetchStudentData = async () => {
+            const sessionData = sessionStorage.getItem('studentData');
+            
+            if (!sessionData) {
+                setError('No se encontraron datos del estudiante. Por favor, inicia sesión nuevamente.');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const parsedData = JSON.parse(sessionData);
+                const estudianteId = parsedData.id;
+
+                if (!estudianteId) {
+                    setError('No se encontró el ID del estudiante.');
+                    setLoading(false);
+                    return;
+                }
+
+                const response = await axiosPublic.get(
+                    `${process.env.NEXT_PUBLIC_USER_DATA}/${estudianteId}`
+                );
+                
+                const data = response.data;
+                setStudentData({
+                    id: data.id,
+                    nombres: data.nombres,
+                    apellidos: data.apellidos,
+                    codigo_estudiantil: data.codigo_estudiantil,
+                    cohorte: data.cohorte,
+                    email: data.email
+                });
+            } catch (error) {
+                console.error('Error al obtener datos del estudiante:', error);
+                // Fallback a datos de session si falla
+                try {
+                    const fallbackData = JSON.parse(sessionData);
+                    setStudentData(fallbackData);
+                } catch (e) {
+                    setError('Error al cargar datos del estudiante.');
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchStudentData();
     }, []);
 
     // Obtener equivalencias del backend
@@ -186,7 +225,16 @@ const page = () => {
         <div className='min-h-screen w-full bg-[#f7f7f7] pb-8 flex flex-col'>
             <div className="border-b border-gray-300 py-7 flex justify-between items-center bg-white px-8">
                 <div className="flex flex-col md:flex-row md:items-center gap-2">
-                    <h1 className='text-2xl font-bold text-[#8F141B] '>Malla Curricular</h1>
+                    <div className="flex flex-col gap-1">
+                        <h1 className='text-2xl font-bold text-[#8F141B]'>Malla Curricular</h1>
+                        {studentData && studentData.nombres && (
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-sm text-gray-600">
+                                <span className="font-medium">{studentData.nombres} {studentData.apellidos}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="text-xs sm:text-sm">Cód: {studentData.codigo_estudiantil}</span>
+                            </div>
+                        )}
+                    </div>
                     <span className='text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-2 text-sm w-25 text-center'>{totalMaterias} materias</span>
                 </div>
                 <div className="flex flex-col md:flex-row gap-2 items-center md:gap-4">

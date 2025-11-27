@@ -59,7 +59,7 @@ const EquivalenceView = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [studentData, setStudentData] = useState(null);
-    const [resumen, setResumen] = useState({})
+    const [resumen, setResumen] = useState({});
 
 
     const [showUniversityModal, setShowUniversityModal] = useState(false);
@@ -79,23 +79,46 @@ const EquivalenceView = ({
         }
     };
 
-    // Obtener datos del estudiante desde sessionStorage
+    // Obtener datos del estudiante directamente del backend
     useEffect(() => {
-        // Primero intentar obtener desde studentData
-        const data = sessionStorage.getItem('studentData');
-        if (data) {
-            setStudentData(JSON.parse(data));
-        } else {
-            // Si no hay datos, intentar con estudianteId
+        const fetchStudentData = async () => {
             const estudianteId = sessionStorage.getItem('estudianteId');
-            if (estudianteId) {
-                // Crear un objeto temporal con el ID
-                setStudentData({ id: parseInt(estudianteId) });
-            } else {
+            
+            if (!estudianteId) {
                 setError('No se encontraron datos del estudiante. Por favor, selecciona un estudiante primero.');
                 setLoading(false);
+                return;
             }
-        }
+
+            try {
+                const response = await axiosPublic.get(
+                    `${process.env.NEXT_PUBLIC_USER_DATA}/${estudianteId}`
+                );
+                
+                const data = response.data;
+                setStudentData({
+                    id: data.id,
+                    nombres: data.nombres,
+                    apellidos: data.apellidos,
+                    codigo_estudiantil: data.codigo_estudiantil,
+                    cohorte: data.cohorte,
+                    email: data.email
+                });
+            } catch (error) {
+                console.error('Error al obtener datos del estudiante:', error);
+                // Si falla, intentar obtener de sessionStorage como fallback
+                const sessionData = sessionStorage.getItem('studentData');
+                if (sessionData) {
+                    try {
+                        setStudentData(JSON.parse(sessionData));
+                    } catch (e) {
+                        console.error('Error al parsear datos de sesión:', e);
+                    }
+                }
+            }
+        };
+
+        fetchStudentData();
     }, []);
 
     // Obtener equivalencias del backend
@@ -202,7 +225,16 @@ const EquivalenceView = ({
             <div className="border-b border-gray-300 py-3 bg-white px-4 flex-shrink-0">
                 <div className="flex flex-col gap-4 md:gap-0 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                        <h1 className='text-xl font-bold text-[#8F141B] text-center sm:text-left'>{title}</h1>
+                        <div className="flex flex-col gap-1">
+                            <h1 className='text-xl font-bold text-[#8F141B] text-center sm:text-left'>{title}</h1>
+                            {studentData && (
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-sm text-gray-600">
+                                    <span className="font-medium">{studentData.nombres} {studentData.apellidos}</span>
+                                    <span className="hidden sm:inline">•</span>
+                                    <span className="text-xs sm:text-sm">Cód: {studentData.codigo_estudiantil}</span>
+                                </div>
+                            )}
+                        </div>
                         <span className='mt-2 sm:mt-0 text-[#8F141B] rounded-full bg-[#F4E7E8] py-1 px-3 text-xs self-center sm:self-auto'>{totalMaterias} materias</span>
                     </div>
                     {showExportButton && (

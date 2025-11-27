@@ -76,6 +76,16 @@ const PDFGenerator = ({
                     <div style="text-align: center; margin-bottom: 20px;">
                         <h1 style="font-size: 24px; font-weight: bold; color: #8F141B; margin-bottom: 5px;">Malla Curricular - PSICOLOGIA - USCO</h1>
                         <p style="font-size: 14px; color: #839198;">ACUERDO CA 010 DE 2025</p>
+                        ${studentData ? `
+                            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <p style="font-size: 15px; color: #1e293b; margin: 0;">
+                                    <span style="font-weight: 600;">Estudiante:</span> ${studentData.nombres || ''} ${studentData.apellidos || ''}
+                                </p>
+                                <p style="font-size: 13px; color: #64748b; margin: 5px 0 0 0;">
+                                    <span style="font-weight: 500;">Código:</span> ${studentData.codigo_estudiantil || ''}
+                                </p>
+                            </div>
+                        ` : ''}
                         <p style="font-size: 14px; color: #8F141B; background: #F4E7E8; padding: 5px 10px; border-radius: 15px; display: inline-block; margin-top: 10px;">
                             ${Object.keys(data).length} materias
                         </p>
@@ -232,7 +242,10 @@ const PDFGenerator = ({
             pdf.addPage('a4', 'p');
             addCanvasToPdf(pdf, resumenCanvas, 15);
 
-            const fileName = `Malla_Curricular_${studentData?.nombre?.replace(/\s+/g, '_') || 'Estudiante'}_${new Date().toISOString().split('T')[0]}.pdf`;
+            const nombreCompleto = studentData?.nombres && studentData?.apellidos 
+                ? `${studentData.nombres}_${studentData.apellidos}`.replace(/\s+/g, '_')
+                : 'Estudiante';
+            const fileName = `Malla_Curricular_${nombreCompleto}_${new Date().toISOString().split('T')[0]}.pdf`;
             pdf.save(fileName);
             
             return { success: true };
